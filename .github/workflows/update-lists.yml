@@ -1,0 +1,25 @@
+name: Päivitä myyntilistat
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  lists:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/msl.py data
+      - name: Tallenna muuttuneet listat
+        run: |
+          if git diff --quiet data/msl.json; then echo "Ei muutoksia"; exit 0; fi
+          git config user.name "mita-lukisin-bot"
+          git config user.email "mita-lukisin-bot@users.noreply.github.com"
+          git add data/msl.json
+          git commit -m "Mitä Suomi lukee -listat $(date -u +%Y-%m-%d)"
+          git push
