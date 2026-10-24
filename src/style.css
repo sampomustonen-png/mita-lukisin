@@ -1,0 +1,307 @@
+/* Asettelu: iOS-tyylinen sovellus. Isot otsikot, lasikortit, kelluva välilehtipalkki. */
+:root{
+  --bg:#F2F2F7; --card:rgba(255,255,255,.74); --card-solid:#FFFFFF;
+  --stroke:rgba(0,0,0,.07); --hi:rgba(255,255,255,.7);
+  --label:#1C1C1E; --label2:rgba(60,60,67,.66); --label3:rgba(60,60,67,.34);
+  --fill:rgba(120,120,128,.12); --fill2:rgba(120,120,128,.22); --sep:rgba(60,60,67,.16);
+  --accent:#0A6E5C; --accent-soft:rgba(10,110,92,.12); --on-accent:#FFFFFF; --danger:#D70015;
+  --blob1:#9FE3D0; --blob2:#C9C4FF; --blob3:#FFD9A8; --dim:rgba(0,0,0,.28);
+  --cov1:#0A6E5C; --cov2:#3E4C9A; --cov3:#A1462E; --cov4:#6B3F8C; --cov5:#2D6A8F; --cov6:#8A6A12;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
+  --serif:"New York","Iowan Old Style","Literata",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --card:rgba(44,44,46,.62); --card-solid:#1C1C1E;
+    --stroke:rgba(255,255,255,.09); --hi:rgba(255,255,255,.08);
+    --label:#FFFFFF; --label2:rgba(235,235,245,.62); --label3:rgba(235,235,245,.3);
+    --fill:rgba(120,120,128,.26); --fill2:rgba(120,120,128,.38); --sep:rgba(84,84,88,.55);
+    --accent:#4FD1B4; --accent-soft:rgba(79,209,180,.16); --on-accent:#00231C; --danger:#FF453A;
+    --blob1:#0B3D33; --blob2:#22205A; --blob3:#4A2A08; --dim:rgba(0,0,0,.5);
+    --cov1:#147A66; --cov2:#4A58A8; --cov3:#B0563B; --cov4:#7A4D9C; --cov5:#38799F; --cov6:#9A7A20;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --card:rgba(44,44,46,.62); --card-solid:#1C1C1E;
+  --stroke:rgba(255,255,255,.09); --hi:rgba(255,255,255,.08);
+  --label:#FFFFFF; --label2:rgba(235,235,245,.62); --label3:rgba(235,235,245,.3);
+  --fill:rgba(120,120,128,.26); --fill2:rgba(120,120,128,.38); --sep:rgba(84,84,88,.55);
+  --accent:#4FD1B4; --accent-soft:rgba(79,209,180,.16); --on-accent:#00231C; --danger:#FF453A;
+  --blob1:#0B3D33; --blob2:#22205A; --blob3:#4A2A08; --dim:rgba(0,0,0,.5);
+  --cov1:#147A66; --cov2:#4A58A8; --cov3:#B0563B; --cov4:#7A4D9C; --cov5:#38799F; --cov6:#9A7A20;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--label);font:400 17px/1.4 var(--font);letter-spacing:-.01em;
+  padding-block:0 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--bg)}
+.ambient{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.ambient i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.7}
+.ambient i:nth-child(1){width:60vmax;height:60vmax;left:-20vmax;top:-25vmax;background:var(--blob1)}
+.ambient i:nth-child(2){width:55vmax;height:55vmax;right:-25vmax;top:10vmax;background:var(--blob2)}
+.ambient i:nth-child(3){width:50vmax;height:50vmax;left:-10vmax;bottom:-30vmax;background:var(--blob3)}
+.app{max-width:720px;margin-inline:auto;min-width:0}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.glass{background:var(--card);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:.5px solid var(--stroke);box-shadow:inset 0 1px 0 var(--hi)}
+.lt{padding-block:28px 14px}
+.eyebrow{margin:0 0 2px;font:600 13px/1.2 var(--font);color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+h1{margin:0;font:700 34px/1.12 var(--font);letter-spacing:-.025em;text-wrap:balance}
+.sub{margin:8px 0 0;color:var(--label2);max-width:34em}
+.stack{display:grid;gap:14px}
+.group{border-radius:22px;padding:18px;margin:0;min-width:0}
+fieldset.group{border:.5px solid var(--stroke)}
+.group legend{float:left;width:100%;padding:0}
+.group h2{margin:0;font:600 19px/1.25 var(--font);letter-spacing:-.015em;text-wrap:balance}
+.hint{margin:3px 0 0;font-size:14px;color:var(--label2);clear:both}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;clear:both}
+.chip{position:relative}
+.chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.chip span{display:flex;align-items:center;min-height:40px;padding:8px 15px;border-radius:999px;background:var(--fill);font:500 15px/1.2 var(--font);transition:background .15s,color .15s}
+.chip input:checked + span{background:var(--accent);color:var(--on-accent)}
+.chip input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.chip input:disabled:not(:checked) + span{opacity:.4}
+.field{width:100%;margin-top:12px;border:0;border-radius:14px;background:var(--fill);padding:12px 14px;font-size:16px;line-height:1.45;min-height:48px}
+textarea.field{min-height:84px;resize:vertical}
+.field::placeholder{color:var(--label3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:50px;padding:0 22px;border-radius:999px;border:0;font:600 17px/1 var(--font);background:var(--fill);color:var(--accent);text-decoration:none}
+.btn.filled{background:var(--accent);color:var(--on-accent)}
+.btn.tinted{background:var(--accent-soft);color:var(--accent)}
+.btn.sm{min-height:34px;padding:0 13px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.wide{width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{margin:0;font-size:14px;color:var(--label2)}
+.note.err{color:var(--danger)}
+.spinner{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--fill2);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loadbar{display:flex;gap:10px;align-items:center}
+
+/* Kirjakortit */
+.books{display:grid;gap:12px}
+.book{border-radius:20px;padding:14px;display:grid;grid-template-columns:72px 1fr;gap:14px;min-width:0}
+.cover{width:72px;aspect-ratio:2/3;max-width:100%;border-radius:6px 10px 10px 6px;padding:8px 7px;display:flex;flex-direction:column;justify-content:space-between;
+  color:#FFFFFF;box-shadow:inset 3px 0 0 rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.18);overflow:hidden}
+.cover b{font:600 10.5px/1.15 var(--serif);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.cover small{font:500 8.5px/1.1 var(--font);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bk-body{min-width:0;display:grid;gap:6px;align-content:start}
+.bk-title{margin:0;font:600 18px/1.25 var(--serif);text-wrap:balance;overflow-wrap:anywhere}
+.bk-meta{margin:0;font-size:14px;color:var(--label2);overflow-wrap:anywhere}
+.bk-series{margin:-2px 0 0;font:500 12px/1.3 var(--font);color:var(--accent);letter-spacing:.01em;overflow-wrap:anywhere}
+.bk-desc{margin:2px 0 0;font-size:15px;line-height:1.5;display:grid;gap:4px}
+.bk-desc small{font-size:12px;color:var(--label2)}
+.sortrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sortrow label{font-size:14px;color:var(--label2);display:flex;align-items:center;gap:8px}
+.sortrow select{border:0;background:var(--fill);border-radius:10px;padding:8px 10px;font:500 14px var(--font);color:var(--label)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.presets button{border:0;border-radius:999px;background:var(--accent-soft);color:var(--accent);font:600 15px/1.2 var(--font);padding:10px 15px;min-height:40px}
+.morebtn{justify-self:start}
+.bk-why{margin:2px 0 0;font-size:15px;line-height:1.45}
+.tags{display:flex;flex-wrap:wrap;gap:5px;list-style:none;margin:2px 0 0;padding:0}
+.tags li{font:500 12px/1 var(--font);padding:5px 8px;border-radius:999px;background:var(--fill);color:var(--label2)}
+.tags li.hit{background:var(--accent-soft);color:var(--accent)}
+.badge{display:inline-block;font:600 11px/1 var(--font);padding:4px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);vertical-align:2px;margin-left:4px}
+.bk-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.bk-links{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:14px;padding-top:8px;margin-top:2px;border-top:.5px solid var(--sep)}
+.bk-links span{color:var(--label2)}
+.bk-links a{color:var(--accent);text-decoration:none;font-weight:500;padding:4px 0}
+.bk-links a:hover{text-decoration:underline}
+.shopbtn{border:0;background:var(--fill);color:var(--label);border-radius:999px;font:500 13px/1 var(--font);padding:7px 11px}
+.shopbtn[aria-expanded="true"]{background:var(--accent);color:var(--on-accent)}
+.bk-shops{border-top:0;padding-top:0;margin-top:-2px}
+.bk-actions .mark[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.searchbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding-block:8px;background:var(--bg)}
+.searchbar .field{margin:0;padding-left:40px;border-radius:12px;background-image:none}
+.sb-wrap{position:relative}
+.sb-wrap svg{position:absolute;left:12px;top:50%;width:18px;height:18px;transform:translateY(-50%);fill:var(--label3)}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filters .chip span{min-height:34px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.count{font-size:13px;color:var(--label2);margin:8px 2px 0;font-variant-numeric:tabular-nums}
+.empty{text-align:center;padding:36px 18px}
+.empty p{margin:6px 0 0;color:var(--label2)}
+.source{font-size:12px;color:var(--label3);text-align:center;margin:24px 0 0}
+
+/* Välilehdet */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;pointer-events:none;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tabs{pointer-events:auto;border-radius:999px;display:flex;gap:2px;padding:5px}
+.tab{border:0;background:transparent;border-radius:999px;min-width:84px;padding:7px 14px 6px;display:grid;justify-items:center;gap:2px;font:500 11px/1 var(--font);color:var(--label2)}
+.tab svg{width:24px;height:24px;fill:currentColor}
+.tab[aria-selected="true"]{background:var(--fill);color:var(--accent)}
+@media (prefers-reduced-motion: reduce){.spinner{animation-duration:3s}.chip span{transition:none}}
+@media (max-width:420px){h1{font-size:30px}.tab{min-width:72px;padding-inline:10px}.book{grid-template-columns:60px 1fr;gap:12px}.cover{width:60px}}
+
+/* ===== Selkeä ja saavutettava ulkoasu ===== */
+:root{ --font:Arial,"Helvetica Neue",Helvetica,"Liberation Sans",sans-serif; }
+/*
+   Yksi kirjasin, yksi korostusväri, täysin peittävät pinnat ja vahva tekstikontrasti. */
+:root{
+  --bg:#F2F2F7; --surface:#FFFFFF; --surface2:#F2F2F7;
+  --label:#1C1C1E; --label2:#5A5A60; --label3:#6C6C70;
+  --line:#D8D8DD; --line-strong:#B9B9BF;
+  --accent:#0066CC; --accent-soft:#E8F1FB; --on-accent:#FFFFFF;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+  --cov1:#2C3440; --cov2:#3D4A63; --cov3:#5E4A5E; --cov4:#34557A; --cov5:#4A4A4F; --cov6:#6E5A44;
+  --serif:var(--font);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000; --surface:#1C1C1E; --surface2:#2C2C2E;
+    --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93;
+    --line:#3A3A3C; --line-strong:#545458;
+    --accent:#0A84FF; --accent-soft:#0C2440; --on-accent:#FFFFFF;
+    --shadow:0 1px 2px rgba(0,0,0,.6);
+    --cov1:#3A4452; --cov2:#4D5C7A; --cov3:#735C73; --cov4:#44688F; --cov5:#5A5A60; --cov6:#836C53;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1C1C1E; --surface2:#2C2C2E;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93;
+  --line:#3A3A3C; --line-strong:#545458;
+  --accent:#0A84FF; --accent-soft:#0C2440; --on-accent:#FFFFFF;
+  --shadow:0 1px 2px rgba(0,0,0,.6);
+  --cov1:#3A4452; --cov2:#4D5C7A; --cov3:#735C73; --cov4:#44688F; --cov5:#5A5A60; --cov6:#836C53;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--label);font-size:17px;line-height:1.45;letter-spacing:0}
+.ambient{display:none}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Pinnat */
+.glass{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:var(--shadow)}
+.group{border-radius:20px;padding:20px}
+fieldset.group{border:1px solid var(--line)}
+.stack{gap:16px}
+
+/* Typografia: yksi kirjasin, selkeä asteikko 34 / 22 / 17 / 15 / 13 */
+h1{font:700 34px/1.15 var(--font);letter-spacing:-.02em}
+.eyebrow{font:600 13px/1.3 var(--font);letter-spacing:.04em;color:var(--accent);text-transform:none}
+.sub{font-size:17px;color:var(--label2);line-height:1.5}
+.group h2{font:600 20px/1.3 var(--font);letter-spacing:-.01em}
+.hint{font-size:15px;color:var(--label2);margin-top:4px}
+.note,.count{color:var(--label2);font-size:15px}
+
+/* Valinnat: selkeät rajatut kapselit, valittu täytetty ja merkitty */
+.chips{gap:10px;margin-top:16px}
+.chip span{min-height:44px;padding:10px 16px;background:var(--surface);border:1.5px solid var(--line-strong);color:var(--label);font:500 16px/1.2 var(--font);border-radius:999px}
+.chip input:hover + span{border-color:var(--label2)}
+.chip input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip input:checked + span::before{content:"✓";margin-right:6px;font-weight:700}
+.chip input:disabled:not(:checked) + span{opacity:.45}
+.presets{gap:10px}
+.presets button{min-height:44px;padding:10px 16px;background:var(--accent-soft);color:var(--accent);border:0;border-radius:999px;font:600 16px/1.2 var(--font)}
+.presets button:hover{filter:brightness(.97)}
+
+/* Painikkeet */
+.btn{min-height:48px;border-radius:14px;font:600 17px/1 var(--font);background:var(--surface2);color:var(--accent);box-shadow:none}
+.btn.filled{background:var(--accent);color:var(--on-accent)}
+.btn.tinted{background:var(--accent-soft);color:var(--accent)}
+.btn.sm{min-height:40px;padding:0 14px;font-size:15px;border-radius:12px}
+.morebtn{min-height:44px}
+.field{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;font-size:17px;box-shadow:none}
+.field:focus{border-color:var(--accent);outline:none}
+.sortrow label{font-size:15px;color:var(--label2)}
+.sortrow select{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:8px 12px;font:500 15px var(--font);color:var(--label)}
+
+/* Kirjakortit */
+.book{border-radius:20px;padding:16px;gap:16px;grid-template-columns:76px 1fr}
+.cover{width:76px;border-radius:4px;padding:7px 5px;box-shadow:none;position:static}
+.cover b{font:600 26px/1 var(--font);display:block;-webkit-line-clamp:unset}
+.cover small{font:600 9px/1.2 var(--font);letter-spacing:0;text-transform:uppercase;overflow-wrap:anywhere}
+.bk-body{gap:8px}
+.bk-title{font:600 19px/1.3 var(--font);letter-spacing:-.01em}
+.badge{background:transparent;border:1px solid var(--line-strong);color:var(--label2);font:500 12px/1 var(--font);padding:4px 7px;margin-left:6px}
+.bk-meta{font-size:15px;color:var(--label2)}
+.bk-series{font:500 13px/1.3 var(--font);color:var(--accent);margin:0}
+.bk-why{font-size:16px;line-height:1.5;color:var(--label)}
+.tags{gap:6px}
+.tags li{background:var(--surface2);color:var(--label2);font:500 13px/1 var(--font);padding:6px 9px}
+.tags li.hit{background:var(--accent-soft);color:var(--accent)}
+.bk-actions{gap:8px;margin-top:6px}
+.bk-actions .btn.sm{background:var(--surface);border:1.5px solid var(--line);color:var(--label)}
+.bk-actions .mark[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.bk-links{font-size:15px;gap:6px 16px;border-top:1px solid var(--line);padding-top:10px}
+.bk-links span{color:var(--label2)}
+.bk-links a{color:var(--accent);font-weight:600;padding:6px 0;min-height:32px;display:inline-flex;align-items:center}
+.shopbtn{background:var(--surface2);color:var(--label);font:600 14px/1 var(--font);padding:9px 12px;border-radius:10px;border:0}
+.bk-shops{border-top:0;padding-top:0}
+
+/* Haku: kiinteä, täysin peittävä palkki, ettei teksti näy sen läpi */
+.searchbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:10px 8px;margin-inline:-4px;padding-inline:4px;border-bottom:1px solid var(--line)}
+.searchbar .field{margin:0;padding-left:42px;border-radius:12px;background:var(--surface)}
+.filters .chip span{min-height:40px;font-size:15px}
+
+/* Välilehtipalkki: peittävä, selkeä valittu tila */
+.dock{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.tabs{background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.12);-webkit-backdrop-filter:none;backdrop-filter:none;padding:6px;gap:4px}
+.tab{min-width:96px;padding:8px 14px;font:600 12px/1 var(--font);color:var(--label2);gap:4px}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);box-shadow:none}
+.tab svg{width:24px;height:24px}
+
+/* Oma aikaväli */
+.range{display:flex;align-items:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
+.range label{display:grid;gap:6px;font-size:15px;color:var(--label2);flex:1 1 120px;min-width:0}
+.range .field{margin:0;font-variant-numeric:tabular-nums}
+.range-dash{padding-bottom:14px;color:var(--label2)}
+.source{font-size:13px;color:var(--label3)}
+body{padding-bottom:130px}
+@media (max-width:420px){h1{font-size:30px}.book{grid-template-columns:62px 1fr;gap:12px;padding:14px}.cover{width:62px}.tab{min-width:80px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* Asetuspalkki */
+.topbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px 18px;padding-top:14px}
+.setting{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;max-width:100%}
+.setting-label{font-size:14px;color:var(--label2)}
+.seg{display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--label);border-radius:9px;min-height:36px;min-width:44px;padding:0 10px;font:600 14px/1 var(--font)}
+.seg button[aria-checked="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.results-title{margin:0;font:700 28px/1.2 var(--font);letter-spacing:-.01em}
+.results-title:focus{outline:none}
+.results-title:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:6px}
+.bk-links a{min-height:44px}
+.cover small{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual;line-height:1.15}
+@media (max-width:420px){.topbar{justify-content:flex-start}.seg button{padding:0 8px}}
+
+/* Ohituslinkki, uudet osat */
+.skip{position:absolute;left:-9999px;top:8px;z-index:100;background:var(--accent);color:var(--on-accent);padding:10px 14px;border-radius:10px;font-weight:600;text-decoration:none}
+.skip:focus{left:max(16px,env(safe-area-inset-left,0px))}
+main:focus{outline:none}
+.badge.new{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.listtools{margin:4px 0 6px}
+.sharebox{display:grid;gap:6px;margin:8px 0 14px}
+.sharebox label{font-size:15px;color:var(--label2)}
+.sharebox .field{margin:0;font-size:14px}
+.info p{margin:10px 0 0;line-height:1.55;max-width:65ch}
+.info h2{margin:0}
+.sliders{display:grid;gap:18px;margin-top:16px}
+.slider{display:grid;gap:6px}
+.slider-ends{display:flex;justify-content:space-between;gap:12px;font-size:15px;color:var(--label2)}
+.slider input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
+.slider-val{font-size:14px;color:var(--label3)}
+.slider.on .slider-val{color:var(--accent);font-weight:600}
+.slider.on .slider-ends{color:var(--label)}
+fieldset.group legend h2{margin:0}
+
+.settings-list{display:grid;gap:14px;margin-top:14px}
+.settings-list .setting{justify-content:space-between}
+.settings-list .setting-label{font-size:16px;color:var(--label)}
+.topbar{padding-top:12px}
+.tabs{width:min(100%,460px);justify-content:space-between}
+.tab{flex:1 1 0;min-width:0;white-space:nowrap;padding:8px 6px;font-size:12px}
+.listtools .btn.sm{background:var(--surface);border:1.5px solid var(--line-strong);color:var(--accent)}
+@media (max-width:420px){.tab{font-size:11px;padding:8px 2px}}
+
+/* Latausilmoitus kelluu, jottei sisältö hyppää sen kadotessa */
+#loadCard{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:25;width:max-content;max-width:calc(100% - 32px);padding:12px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+
+.badge.loan{border-color:var(--accent);color:var(--accent)}
+
+.badge.msl{border-color:var(--label2);color:var(--label)}
+.now-controls{display:grid;gap:12px}
+.now-controls .setting{justify-content:space-between}
+.now-controls .chips{margin-top:2px}
+#nowMonthSeg button{text-transform:capitalize}

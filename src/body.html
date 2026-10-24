@@ -1,0 +1,166 @@
+<div class="app" id="app" lang="fi">
+<a class="skip" href="#main" data-i18n="skip">Siirry sisältöön</a>
+<div class="topbar" role="region" data-i18n-attr="aria-label:settingsRegion">
+  <div class="setting"><span class="setting-label" id="lblLang" data-i18n="language">Kieli</span>
+    <div class="seg" role="radiogroup" aria-labelledby="lblLang" id="langSeg">
+      <button type="button" role="radio" data-lang="fi" lang="fi" aria-label="Suomi">FI</button>
+      <button type="button" role="radio" data-lang="sv" lang="sv" aria-label="Svenska">SV</button>
+      <button type="button" role="radio" data-lang="en" lang="en" aria-label="English">EN</button>
+    </div>
+  </div>
+</div>
+
+<main id="main" tabindex="-1">
+<section id="viewAsk" role="tabpanel" aria-labelledby="hAsk">
+  <header class="lt">
+    <p class="eyebrow">Mitä lukisin</p>
+    <h1 id="hAsk" data-i18n="askTitle">Millaista luet?</h1>
+    <p class="sub" id="askSub"></p>
+  </header>
+  <div class="stack">
+    <div class="group glass loadbar" id="loadCard"><span class="spinner"></span><p class="note" id="loadText" role="status" data-i18n="loading">Ladataan kirjatietoja…</p></div>
+    <div class="group glass">
+      <h2 data-i18n="presetsTitle">Pikavalinnat</h2>
+      <p class="hint" data-i18n="pickOne">Valitse yksi.</p>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="stack" id="questions"></div>
+    <button type="button" class="btn tinted morebtn" id="moreQ" aria-expanded="false" aria-controls="moreQuestions" data-i18n="moreQ">Tarkempi kysely</button>
+    <div class="stack" id="moreQuestions" hidden>
+      <fieldset class="group glass" id="sliderGroup">
+        <legend><h2 data-i18n="slidersTitle">Säädä tunnelmaa</h2></legend>
+        <p class="hint" data-i18n="slidersHint">Siirrä liukusäädintä kohti sitä, mitä toivot. Keskikohta tarkoittaa, ettei asialla ole väliä.</p>
+        <div class="sliders" id="sliders"></div>
+      </fieldset>
+      <div class="group glass" id="likedGroup">
+        <h2><label for="liked" data-i18n="likedTitle">Kirjoja, joista olet pitänyt</label></h2>
+        <p class="hint" id="likedHint" data-i18n="likedHint">Vapaaehtoinen, mutta parantaa suosituksia eniten.</p>
+        <textarea class="field" id="liked" maxlength="600" aria-describedby="likedHint" data-i18n-attr="placeholder:likedPh"></textarea>
+      </div>
+    </div>
+    <div class="stack">
+      <button type="button" class="btn filled wide" id="recBtn" disabled data-i18n="showRecs">Näytä suositukset</button>
+      <button type="button" class="btn wide" id="resetBtn" data-i18n="reset">Tyhjennä valinnat</button>
+      <p class="note" id="recNote" role="status"></p>
+    </div>
+    <div id="results" class="stack" hidden>
+      <header class="lt" style="padding-bottom:0"><h2 id="hResults" class="results-title" tabindex="-1" data-i18n="forYou">Sinulle</h2><p class="sub" id="resultsSub" role="status" aria-live="polite"></p></header>
+      <button type="button" class="btn tinted wide" id="aiBtn" hidden data-i18n="askClaude">Pyydä Claudelta kymmenen parasta ja perustelut</button>
+      <div class="sortrow"><button type="button" class="btn sm" id="shareRecs" data-i18n="shareRecs">Jaa suositukset</button><label for="recSort"><span data-i18n="sort">Järjestys</span> <select id="recSort"></select></label></div>
+      <div class="group glass loadbar" id="aiCard" hidden><span class="spinner"></span><p class="note" data-i18n="claudeWorking">Claude valitsee parhaat ja perustelee valinnat…</p></div>
+      <div class="books" id="recList"></div>
+      <div class="row"><button type="button" class="btn tinted" id="moreBtn" data-i18n="showMore">Näytä lisää</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="viewNow" role="tabpanel" hidden aria-labelledby="hNow">
+  <header class="lt">
+    <p class="eyebrow">Mitä Suomi lukee</p>
+    <h1 id="hNow" data-i18n="nowTitle">Nyt luetaan</h1>
+    <p class="sub" id="nowSub"></p>
+  </header>
+  <div class="stack">
+    <div class="group glass now-controls">
+      <div class="setting"><span class="setting-label" id="lblNowMonth" data-i18n="nowMonth">Kuukausi</span><div class="seg" role="radiogroup" aria-labelledby="lblNowMonth" id="nowMonthSeg"></div></div>
+      <div class="setting"><span class="setting-label" id="lblNowFormat" data-i18n="nowFormat">Muoto</span><div class="seg" role="radiogroup" aria-labelledby="lblNowFormat" id="nowFormatSeg"></div></div>
+      <div class="chips" id="nowCats" role="radiogroup" data-i18n-attr="aria-label:nowCategory"></div>
+    </div>
+    <p class="note" id="nowNote" role="status"></p>
+    <div class="books" id="nowList"></div>
+    <p class="source" id="nowSource"></p>
+  </div>
+</section>
+
+<section id="viewSearch" role="tabpanel" hidden aria-labelledby="hSearch">
+  <header class="lt">
+    <p class="eyebrow" data-i18n="tabSearch">Haku</p>
+    <h1 id="hSearch" data-i18n="searchTitle">Kaikki romaanit</h1>
+    <p class="note" id="loadNote"></p>
+  </header>
+  <div class="searchbar">
+    <div class="sb-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6-1.4 1.4-4.6-4.6A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+    <input class="field" id="q" type="search" autocomplete="off" data-i18n-attr="placeholder:searchPh;aria-label:searchLabel"></div>
+    <div class="filters" id="sFilters" role="group" data-i18n-attr="aria-label:filters">
+      <label class="chip"><input type="checkbox" id="fDom"><span data-i18n="fDom">Kotimaiset</span></label>
+      <label class="chip"><input type="checkbox" id="fTr"><span data-i18n="fTr">Käännökset</span></label>
+      <label class="chip"><input type="checkbox" id="fAudio"><span data-i18n="fAudio">Äänikirja</span></label>
+      <label class="chip"><input type="checkbox" id="fNew"><span>2015–</span></label>
+      <label class="chip"><input type="checkbox" id="fYoung"><span data-i18n="fYoung">Nuorille</span></label>
+    </div>
+    <div class="sortrow"><p class="count" id="sCount" role="status"></p><label for="sSort"><span data-i18n="sort">Järjestys</span> <select id="sSort"></select></label></div>
+  </div>
+  <div class="books" id="sList"></div>
+  <div class="row" style="margin-top:12px"><button type="button" class="btn tinted" id="sMore" hidden data-i18n="showMore">Näytä lisää</button></div>
+</section>
+
+<section id="viewList" role="tabpanel" hidden aria-labelledby="hList">
+  <header class="lt">
+    <p class="eyebrow" data-i18n="tabList">Oma lista</p>
+    <h1 id="hList" data-i18n="listTitle">Luettavat</h1>
+    <p class="sub" data-i18n="listSub">Tallentamasi kirjat.</p>
+    <p class="note" id="syncNote" role="status"></p>
+  </header>
+  <div class="group glass" id="sharedBox" hidden>
+    <h2 id="sharedTitle"></h2>
+    <p class="hint" id="sharedHint"></p>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn filled sm" id="sharedSave" data-i18n="sharedSaveAll">Tallenna kaikki omalle listalle</button><button type="button" class="btn sm" id="sharedClose" data-i18n="close">Sulje</button></div>
+    <div class="books" id="sharedList" style="margin-top:14px"></div>
+  </div>
+  <div class="row listtools">
+    <button type="button" class="btn sm" id="exportBtn" data-i18n="exportList">Vie tiedostoon</button>
+    <button type="button" class="btn sm" id="importBtn" data-i18n="importList">Tuo tiedostosta</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <button type="button" class="btn sm" id="shareList" data-i18n="shareList">Jaa lista</button>
+  </div>
+  <p class="note" id="listNote" role="status"></p>
+  <div class="sharebox" id="shareBox" hidden>
+    <label for="shareUrl" data-i18n="shareLinkLabel">Jakolinkki</label>
+    <input class="field" id="shareUrl" readonly>
+  </div>
+  <div class="books" id="myList"></div>
+  <div class="group glass empty" id="myEmpty"><h2 data-i18n="listEmpty">Lista on tyhjä</h2><p data-i18n="listEmptyHint">Lisää kirjoja suosituksista tai hausta.</p></div>
+</section>
+
+<section id="viewInfo" role="tabpanel" hidden aria-labelledby="hInfo">
+  <header class="lt">
+    <p class="eyebrow" data-i18n="tabInfo">Tietoa</p>
+    <h1 id="hInfo" data-i18n="infoTitle">Tietoa sovelluksesta</h1>
+  </header>
+  <div class="stack info">
+  <section class="group glass" aria-labelledby="hSettings">
+    <h2 id="hSettings" data-i18n="settingsTitle">Asetukset</h2>
+    <div class="settings-list">
+      <div class="setting"><span class="setting-label" id="lblTheme" data-i18n="appearance">Ulkoasu</span>
+    <div class="seg" role="radiogroup" aria-labelledby="lblTheme" id="themeSeg">
+      <button type="button" role="radio" data-theme-val="auto" data-i18n="themeAuto" data-i18n-attr="aria-label:themeAutoLong">Auto</button>
+      <button type="button" role="radio" data-theme-val="light" data-i18n="themeLight">Vaalea</button>
+      <button type="button" role="radio" data-theme-val="dark" data-i18n="themeDark">Tumma</button>
+    </div>
+  </div>
+      <div class="setting"><span class="setting-label" id="lblSize" data-i18n="textSize">Tekstin koko</span>
+    <div class="seg" role="radiogroup" aria-labelledby="lblSize" id="sizeSeg">
+      <button type="button" role="radio" data-size="1" data-i18n-attr="aria-label:sizeNormal">A</button>
+      <button type="button" role="radio" data-size="1.15" data-i18n-attr="aria-label:sizeLarge" style="font-size:18px">A</button>
+      <button type="button" role="radio" data-size="1.3" data-i18n-attr="aria-label:sizeXLarge" style="font-size:21px">A</button>
+    </div>
+  </div>
+    </div>
+  </section>
+  <div class="stack" id="infoBody"></div>
+  </div>
+</section>
+</main>
+
+<p class="source" id="sourceNote"></p>
+</div>
+
+<div class="dock">
+  <nav class="tabs glass" role="tablist" data-i18n-attr="aria-label:views">
+    <button type="button" class="tab" role="tab" data-view="ask" aria-selected="true" aria-controls="viewAsk" id="tabAsk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg><span data-i18n="tabAsk">Suositukset</span></button>
+    <button type="button" class="tab" role="tab" data-view="now" aria-selected="false" aria-controls="viewNow" id="tabNow" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h3V10H4zm6.5 0h3V4h-3zM17 20h3v-7h-3z"/></svg><span data-i18n="tabNow">Nyt luetaan</span></button>
+    <button type="button" class="tab" role="tab" data-view="search" aria-selected="false" aria-controls="viewSearch" id="tabSearch" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6-1.4 1.4-4.6-4.6A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg><span data-i18n="tabSearch">Haku</span></button>
+    <button type="button" class="tab" role="tab" data-view="list" aria-selected="false" aria-controls="viewList" id="tabList" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg><span data-i18n="tabList">Oma lista</span></button>
+    <button type="button" class="tab" role="tab" data-view="info" aria-selected="false" aria-controls="viewInfo" id="tabInfo" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm-1 8v7h2v-7zm0-4v2h2V6z"/></svg><span data-i18n="tabInfo">Tietoa</span></button>
+  </nav>
+</div>
