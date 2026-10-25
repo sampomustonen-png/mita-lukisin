@@ -8,7 +8,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,9 +18,9 @@ jobs:
       - run: bash scripts/update.sh
       - name: Tallenna muuttunut aineisto
         run: |
-          if git diff --quiet data/books.json data/msl.json; then echo "Ei muutoksia"; exit 0; fi
+          if git diff --quiet data/books.json data/nonfiction.json data/msl.json; then echo "Ei muutoksia"; exit 0; fi
           git config user.name "mita-lukisin-bot"
           git config user.email "mita-lukisin-bot@users.noreply.github.com"
-          git add data/books.json data/msl.json
+          git add data/books.json data/nonfiction.json data/msl.json
           git commit -m "Aineiston päivitys $(date -u +%Y-%m-%d)"
           git push
