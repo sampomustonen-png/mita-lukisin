@@ -20,7 +20,10 @@ var LANG = (function(){
   return STR[n] ? n : 'fi';
 })();
 var LOCALE = {fi:'fi-FI', sv:'sv-FI', en:'en-GB'};
+/* Kirjalaji: romaanit ('nov') tai tietokirjat ('nf'). Tietokirjatilassa käytetään avaimen Nf-versiota, jos sellainen on. */
+var MODE = store.get('mk.mode', 'nov') === 'nf' ? 'nf' : 'nov';
 function T(k, vars){
+  if(MODE === 'nf' && STR.fi[k + 'Nf'] != null) k = k + 'Nf';
   var s = (STR[LANG] && STR[LANG][k] != null) ? STR[LANG][k] : STR.fi[k];
   if(s == null) return k;
   if(vars) Object.keys(vars).forEach(function(v){ s = s.split('{' + v + '}').join(vars[v]); });
@@ -42,7 +45,8 @@ function applyStatic(){
     s.value = v;
   });
   $('sourceNote').textContent = T('sourceNote');
-  $('askSub').textContent = T('askSub', {n:B.length ? fmt(B.length) : '…'});
+  $('askSub').textContent = T('askSub');
+  markMode();
   $('moreQ').textContent = $('moreQuestions').hidden ? T('moreQ') : T('lessQ');
   renderInfo();
 }
@@ -66,11 +70,20 @@ function pop(b){
 }
 
 /* ---------- Data ----------
-   Rivi: [0 nimi, 1 tekijä, 2 vuosi, 3 kustantaja, 4 asiasanat, 5 liput, 6 tietueita, 7 sarja|osa, 8 Finna-id, 9 sivut, 10 Helmet-lainat] */
+   Rivi: [0 nimi, 1 tekijä, 2 vuosi, 3 kustantaja, 4 asiasanat, 5 liput, 6 tietueita, 7 sarja|osa, 8 Finna-id, 9 sivut, 10 Helmet-lainat,
+   11 alaotsikko (vain tietokirjat)]. Tietokirjat ladataan omasta tiedostostaan samaan taulukkoon vasta, kun niitä tarvitaan. */
 var D = null, V = [], P = [], B = [], IDX = [];
-var F_DOM = 1, F_TR = 2, F_AUDIO = 4, F_YOUNG = 8, F_CHILD = 16, F_FS = 32, F_LIVE = 64;
+var F_DOM = 1, F_TR = 2, F_AUDIO = 4, F_YOUNG = 8, F_CHILD = 16, F_FS = 32, F_LIVE = 64, F_NF = 128;
+var BIGP = {}; /* suurten kustantajien indeksit (Löytöjä-painotus) */
+function isNF(b){ return !!(b[5] & F_NF); }
+function inMode(b){ return isNF(b) === (MODE === 'nf'); }
+/* Tallennetuissa kirjoissa asiasanat ja kustantaja ovat tekstinä, jotta ne säilyvät aineiston päivittyessä */
+function termText(x){ return typeof x === 'string' ? x : (V[x] || ''); }
+function pubText(b){ return typeof b[3] === 'string' ? b[3] : (P[b[3]] || ''); }
+function portable(b){ var c = b.slice(); c[3] = pubText(b); c[4] = b[4].map(termText); return c; }
+function currentRow(b){ if(!D) return b; ensureMaps(); var i = KEYIDX[keyOf(b)]; return i != null ? B[i] : b; }
 function keyOf(b){ return fold(b[0]) + '|' + fold(b[1]); }
-function indexRow(b){ return fold(b[0] + ' ' + b[1] + ' ' + (b[7] || '') + ' ' + b[4].map(function(i){ return V[i]; }).join(' ')); }
+function indexRow(b){ return fold(b[0] + ' ' + (b[11] || '') + ' ' + b[1] + ' ' + (b[7] || '') + ' ' + b[4].map(function(i){ return V[i]; }).join(' ')); }
 var KEYIDX = null, IDMAP = null;
 /* Hakemistot rakennetaan vasta tarvittaessa, jotta sovellus käynnistyy nopeasti */
 function ensureMaps(){
@@ -88,42 +101,85 @@ async function ensureMapsAsync(){
   if(!KEYIDX){ KEYIDX = K; IDMAP = M; }
 }
 function ensureIdx(){ for(var i = IDX.length; i < B.length; i++) IDX.push(indexRow(B[i])); }
+/* Luetaan rivimuotoinen tiedosto virtana ja annetaan selaimen hengähtää välillä, jottei sivu jumitu */
+async function readNdjson(url){
+  var res = await fetch(url);
+  if(!res.ok) throw new Error(res.status);
+  var rows = [], head = null, rest = '';
+  function eat(chunk, last){
+    var lines = (rest + chunk).split('\n'); rest = last ? '' : lines.pop();
+    for(var j = 0; j < lines.length; j++){ var ln = lines[j]; if(!ln) continue; if(!head) head = JSON.parse(ln); else rows.push(JSON.parse(ln)); }
+  }
+  if(res.body && window.TextDecoder){
+    var reader = res.body.getReader(), dec = new TextDecoder(), t0 = performance.now();
+    for(;;){
+      var r = await reader.read();
+      if(r.done){ eat(dec.decode(), true); break; }
+      eat(dec.decode(r.value, {stream:true}), false);
+      if(performance.now() - t0 > 40){ await new Promise(function(ok){ setTimeout(ok, 0); }); t0 = performance.now(); }
+    }
+  } else { eat(await res.text(), true); }
+  return {head:head, rows:rows};
+}
+function loadFailed(){
+  $('loadCard').hidden = false;
+  $('loadText').textContent = T('loadError'); $('loadText').className = 'note err';
+  $('loadCard').querySelector('.spinner').hidden = true;
+}
+function ready(){ return !!D && (MODE !== 'nf' || NF_STATE === 2); }
+function updateRecBtn(){ $('recBtn').disabled = !ready(); }
 async function load(){
   try{
-    var res = await fetch('books.ndjson');
-    if(!res.ok) throw new Error(res.status);
-    /* Luetaan virtana rivi kerrallaan ja annetaan selaimen hengähtää välillä, jottei sivu jumitu */
-    var rows = [], head = null, rest = '';
-    function eat(chunk, last){
-      var lines = (rest + chunk).split('\n'); rest = last ? '' : lines.pop();
-      for(var j = 0; j < lines.length; j++){ var ln = lines[j]; if(!ln) continue; if(!head) head = JSON.parse(ln); else rows.push(JSON.parse(ln)); }
-    }
-    if(res.body && window.TextDecoder){
-      var reader = res.body.getReader(), dec = new TextDecoder(), t0 = performance.now();
-      for(;;){
-        var r = await reader.read();
-        if(r.done){ eat(dec.decode(), true); break; }
-        eat(dec.decode(r.value, {stream:true}), false);
-        if(performance.now() - t0 > 40){ await new Promise(function(ok){ setTimeout(ok, 0); }); t0 = performance.now(); }
-      }
-    } else { eat(await res.text(), true); }
-    D = head; D.b = rows;
-  }catch(e){
-    $('loadText').textContent = T('loadError'); $('loadText').className = 'note err';
-    $('loadCard').querySelector('.spinner').hidden = true; return;
-  }
+    var r = await readNdjson('books.ndjson');
+    D = r.head; D.b = r.rows;
+  }catch(e){ loadFailed(); return; }
   V = D.v; P = D.p; B = D.b;
   IDX = [];
-  $('askSub').textContent = T('askSub', {n:fmt(B.length)});
-  if(!B.some(function(b){ return b[9]; })){ var lf = document.querySelector('input[name="length"]'); if(lf) lf.closest('fieldset').hidden = true; }
-  $('loadCard').hidden = true;
-  $('recBtn').disabled = false;
+  for(var i = 0; i < 25 && i < P.length; i++) BIGP[i] = 1;
+  if(MODE === 'nf') loadNF(); else $('loadCard').hidden = true;
+  updateRecBtn();
   renderMyList();
   if(/^#jaa=/.test(location.hash)) openSharedFromHash();
   if(!$('viewSearch').hidden) renderSearch();
   setTimeout(fetchLive, 1500);
   loadMsl();
 }
+/* Tietokirjat: sanasto ja kustantajat yhdistetään romaanien vastaaviin, rivit lisätään samaan taulukkoon */
+var NF_STATE = 0, NF_P = null;
+function loadNF(){
+  if(NF_P) return NF_P;
+  NF_STATE = 1;
+  $('loadCard').hidden = false; $('loadCard').querySelector('.spinner').hidden = false;
+  $('loadText').className = 'note'; $('loadText').textContent = T('loadingNf');
+  NF_P = (async function(){
+    while(!D) await new Promise(function(ok){ setTimeout(ok, 100); });
+    var r;
+    try{ r = await readNdjson('nonfiction.ndjson'); }
+    catch(e){ NF_STATE = -1; NF_P = null; if(MODE === 'nf') loadFailed(); return false; }
+    var vi = {}, pi = {};
+    V.forEach(function(t, i){ vi[t] = i; }); P.forEach(function(p, i){ pi[p] = i; });
+    var vmap = r.head.v.map(function(t){ if(vi[t] == null){ vi[t] = V.length; V.push(t); } return vi[t]; });
+    var pmap = r.head.p.map(function(p, k){ if(pi[p] == null){ pi[p] = P.length; P.push(p); } if(k < 25) BIGP[pi[p]] = 1; return pi[p]; });
+    var t0 = performance.now();
+    for(var k = 0; k < r.rows.length; k++){
+      var b = r.rows[k];
+      b[4] = b[4].map(function(i){ return vmap[i]; }); b[3] = b[3] >= 0 ? pmap[b[3]] : -1; b[5] |= F_NF;
+      if(KEYIDX && KEYIDX[keyOf(b)] == null){ KEYIDX[keyOf(b)] = B.length; if(b[8]) IDMAP[b[8]] = B.length; }
+      B.push(b);
+      if(performance.now() - t0 > 40){ await new Promise(function(ok){ setTimeout(ok, 0); }); t0 = performance.now(); }
+    }
+    NF_STATE = 2; NF_N = r.rows.length;
+    $('loadCard').hidden = true;
+    updateRecBtn();
+    renderMyList();
+    if(MODE === 'nf' && !$('viewSearch').hidden && !sState.sim) renderSearch();
+    if(MSL){ TTL = null; loadMsl(); }
+    setTimeout(fetchLiveNF, 800);
+    return true;
+  })();
+  return NF_P;
+}
+var NF_N = 0;
 
 /* ---------- Lomake ---------- */
 var FORM_BUILT = false;
@@ -152,6 +208,7 @@ function buildForm(){
     if(q.quick) $('questions').appendChild(g); else $('moreQuestions').insertBefore(g, $('sliderGroup'));
   });
   buildRange(); buildSliders();
+  $('sliderGroup').hidden = !SLIDERS.length;
   FORM_BUILT = true;
   if(keep) applyAnswers(keep);
 }
@@ -214,7 +271,43 @@ function applyAnswers(a){
   SLIDERS.forEach(function(s){ var i = $('sl-' + s.id); if(i){ i.value = String((a.sl && a.sl[s.id]) || 0); i._upd(); } });
   syncRange();
 }
-function saveAnswers(){ store.set('mk.answers', {a:getAnswers(), liked:$('liked').value}); }
+function ansKey(){ return MODE === 'nf' ? 'mk.answers.nf' : 'mk.answers'; }
+function saveAnswers(){ store.set(ansKey(), {a:getAnswers(), liked:$('liked').value}); }
+function restoreAnswers(){ var s = store.get(ansKey(), null); applyAnswers((s && s.a) || {}); $('liked').value = (s && s.liked) || ''; }
+/* Kirjalajin vaihto: omat kysymykset, pikavalinnat ja vastaukset kummallekin */
+function useModeSets(){
+  QUESTIONS = MODE === 'nf' ? NF_QUESTIONS : NOV_QUESTIONS;
+  SLIDERS = MODE === 'nf' ? NF_SLIDERS : NOV_SLIDERS;
+  PRESETS = MODE === 'nf' ? NF_PRESETS : NOV_PRESETS;
+}
+function markMode(){
+  document.querySelectorAll('.modeseg button').forEach(function(b){ var on = b.dataset.mode === MODE; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+  var fy = $('fYoung'); if(fy) fy.closest('label').hidden = MODE === 'nf';
+}
+function setMode(m){
+  if(m === MODE) return;
+  saveAnswers();
+  MODE = m; store.set('mk.mode', m);
+  useModeSets();
+  FORM_BUILT = false; buildForm(); buildPresets(); restoreAnswers();
+  applyStatic();
+  if(recState.ctl) recState.ctl.abort();
+  recState = {ranked:[], base:[], shown:0, ctl:null, a:null};
+  $('recList').innerHTML = ''; $('results').hidden = true; $('aiCard').hidden = true; $('recNote').textContent = '';
+  if(m === 'nf' && NF_STATE !== 2) loadNF(); else if(D) $('loadCard').hidden = true;
+  updateRecBtn();
+  sState = {res:[], shown:0};
+  if(!$('viewSearch').hidden){ if(ready()) renderSearch(); else { $('sList').innerHTML = ''; $('sCount').textContent = ''; } }
+}
+document.querySelectorAll('.modeseg').forEach(function(seg){
+  seg.addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) setMode(b.dataset.mode); });
+  seg.addEventListener('keydown', function(e){
+    if(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) < 0) return;
+    e.preventDefault();
+    setMode(MODE === 'nf' ? 'nov' : 'nf');
+    var on = seg.querySelector('[aria-checked="true"]'); if(on) on.focus();
+  });
+});
 $('viewAsk').addEventListener('change', function(e){
   var inp = e.target; if(!inp.name) return;
   var q = QUESTIONS.filter(function(x){ return x.id === inp.name; })[0]; if(!q) return;

@@ -16,7 +16,10 @@ var QUESTIONS = [
     {t:L('Sotaromaani', 'Krigsroman', 'War fiction'), m:'^(sotaromaanit|toinen maailmansota|ensimmäinen maailmansota|sotilaat|jatkosota|talvisota|sotarintama|kotirintama|suomen sisällissota|sotakirjallisuus)$'},
     {t:L('Seikkailu', 'Äventyr', 'Adventure'), m:'^(seikkailukirjallisuus|seikkailu|historialliset seikkailuromaanit|seikkailuromaanit|seikkailut|merirosvot)$'},
     {t:L('Huumori ja satiiri', 'Humor och satir', 'Humour and satire'), m:'^(huumori|satiiri|satiirit|musta huumori|parodia|parodiat|tragikomiikka)$'},
-    {t:L('Viihde ja feelgood', 'Underhållning och feelgood', 'Light and feel-good'), m:'^(viihdekirjallisuus|chick lit|feelgood-kirjallisuus|hyvän mielen kirjat)$'}
+    {t:L('Viihde ja feelgood', 'Underhållning och feelgood', 'Light and feel-good'), m:'^(viihdekirjallisuus|chick lit|feelgood-kirjallisuus|hyvän mielen kirjat)$'},
+    {t:L('Runous', 'Poesi', 'Poetry'), m:'^(runot|proosarunot|runoelmat|lyriikka|runoteokset|runokokoelmat)$'},
+    {t:L('Novellit', 'Noveller', 'Short stories'), m:'^(novellit|lyhytproosa|novellikokoelmat)$'},
+    {t:L('Näytelmät', 'Pjäser', 'Plays'), m:'^(näytelmät|näytelmäkirjallisuus)$'}
   ]},
   {id:'style', quick:true, max:3, w:3, text:L('Millaista kerrontaa luet mieluiten?', 'Vilken sorts berättande läser du helst?', 'What kind of storytelling do you prefer?'), options:[
     {t:L('Helppolukuista ja viihdyttävää', 'Lättläst och underhållande', 'Easy and entertaining'), m:'^(viihdekirjallisuus|helppolukuiset kirjat|chick lit|feelgood-kirjallisuus)$'},
@@ -52,20 +55,6 @@ var QUESTIONS = [
   ]},
   {id:'known', quick:true, def:1, max:1, filter:true, text:L('Tunnettuja kirjoja vai löytöjä?', 'Kända böcker eller upptäckter?', 'Well-known books or discoveries?'), options:[
     {t:L('Tunnettuja ja suosittuja', 'Kända och populära', 'Well-known and popular')}, {t:L('Sekä että', 'Både och', 'A mix')}, {t:L('Löytöjä', 'Upptäckter', 'Discoveries')}
-  ]},
-  {id:'avoid', exclude:true, max:10, text:L('Mitä aiheita haluat välttää?', 'Vilka ämnen vill du undvika?', 'Which topics do you want to avoid?'),
-   hint:L('Kirjat, joiden asiasanoissa aihe mainitaan, jätetään pois. Aiheita voi valita useita.', 'Böcker där ämnet nämns bland ämnesorden utesluts. Du kan välja flera.', 'Books whose subject terms mention the topic are left out. You can choose several.'), options:[
-    {t:L('Väkivalta', 'Våld', 'Violence'), m:'^(väkivalta|perheväkivalta|parisuhdeväkivalta|väkivaltarikokset|väkivaltaisuus|julmuus|kidutus|sarjamurhaajat|henkinen väkivalta|poliittinen väkivalta)$'},
-    {t:L('Seksuaalinen väkivalta', 'Sexuellt våld', 'Sexual violence'), m:'^(raiskaus|seksuaalinen hyväksikäyttö|hyväksikäyttö|insesti|seksuaalinen väkivalta|lasten hyväksikäyttö|seksuaalinen häirintä)$'},
-    {t:L('Itsemurha ja itsetuho', 'Självmord och självskada', 'Suicide and self-harm'), m:'^(itsemurha|itsemurhat|itsemurhayritykset|itsetuho|itsetuhoisuus|viiltely)$'},
-    {t:L('Sota', 'Krig', 'War'), m:'^(sota|sodat|sotaromaanit|toinen maailmansota|ensimmäinen maailmansota|jatkosota|talvisota|sisällissodat|suomen sisällissota|kansalaissota|lapin sota|sotilaat|sotarintama|sissisota)$'},
-    {t:L('Päihteet ja riippuvuudet', 'Droger och beroende', 'Substances and addiction'), m:'^(huumeet|alkoholismi|riippuvuus|alkoholinkäyttö|alkoholistit|alkoholiongelmat|päihteet|huumeiden käyttö|huumeongelmat|alkoholi|huumekauppa)$'},
-    {t:L('Vakava sairaus', 'Allvarlig sjukdom', 'Serious illness'), m:'^(syöpätaudit|sairaus|sairaudet|muistisairaudet|kuolemanodotus|dementia)$'},
-    {t:L('Kiusaaminen', 'Mobbning', 'Bullying'), m:'^(kiusaaminen|koulukiusaaminen|työpaikkakiusaaminen)$'},
-    {t:L('Syömishäiriöt', 'Ätstörningar', 'Eating disorders'), m:'^(syömishäiriöt|anoreksia|bulimia)$'},
-    {t:L('Terrorismi', 'Terrorism', 'Terrorism'), m:'^(terrorismi|terroristit|terrori-iskut)$'},
-    {t:L('Kauhu', 'Skräck', 'Horror'), m:'^(kauhukirjallisuus|kauhu|demonit|zombit|vampyyrit)$'},
-    {t:L('Seksi ja erotiikka', 'Sex och erotik', 'Sex and erotica'), m:'^(erotiikka|seksi|seksiala|eroottinen kirjallisuus|erotisk litteratur)$'}
   ]},
   {id:'era', max:2, w:2, text:L('Mihin aikaan tarina saa sijoittua?', 'När får berättelsen utspela sig?', 'When should the story be set?'), options:[
     {t:L('Keskiaika tai varhaisempi', 'Medeltiden eller tidigare', 'Middle Ages or earlier'), m:'^(keskiaika|antiikki|viikingit|esihistoria|1[0-4]00-luku|rautakausi|ristiretket)$'},
@@ -146,6 +135,9 @@ var PRESETS = [
   [L('Suuri historiallinen tarina', 'Stor historisk berättelse', 'Big historical story'), {genre:[5, 8]}],
   [L('Fantasiaa ja scifiä', 'Fantasy och sf', 'Fantasy and sci-fi'), {genre:[2, 3]}],
   [L('Hauskaa luettavaa', 'Rolig läsning', 'Something funny'), {genre:[11], mood:[4]}],
+  [L('Runoja', 'Dikter', 'Poetry'), {genre:[13]}],
+  [L('Novelleja', 'Noveller', 'Short stories'), {genre:[14]}],
+  [L('Näytelmiä', 'Pjäser', 'Plays'), {genre:[15]}],
   [L('Kokeellinen', 'Experimentellt', 'Experimental'), {style:[11]}],
   [L('Kaunokirjallinen', 'Skönlitterärt', 'Literary'), {style:[2, 7, 8]}],
   [L('Palkittu', 'Prisbelönt', 'Award-winning'), {style:[12]}],
@@ -153,3 +145,92 @@ var PRESETS = [
   [L('Uutuudet', 'Nyheter', 'New releases'), {age:[0]}],
   [L('Klassikot', 'Klassiker', 'Classics'), {age:[3]}]
 ];
+
+/* ---------- Tietokirjat ----------
+   Aiheet perustuvat kirjastojen YKL-luokitukseen ja asiasanoihin. Aineiston käsittely (scripts/nf_process.py)
+   lisää jokaiselle kirjalle aiheluokan merkinnän (@historia, @tiede …), johon aihekysymys vertaa. */
+var NOV_QUESTIONS = QUESTIONS, NOV_SLIDERS = SLIDERS, NOV_PRESETS = PRESETS;
+var NF_QUESTIONS = [
+  {id:'genre', quick:true, max:3, w:5, text:L('Mistä aiheista haluat lukea?', 'Vilka ämnen vill du läsa om?', 'Which topics interest you?'), options:[
+    {t:L('Elämäkerrat ja muistelmat', 'Biografier och memoarer', 'Biographies and memoirs'), m:'^@elamakerrat$'},
+    {t:L('Historia', 'Historia', 'History'), m:'^@historia$'},
+    {t:L('Sotahistoria', 'Krigshistoria', 'Military history'), m:'^@sota$'},
+    {t:L('Yhteiskunta ja politiikka', 'Samhälle och politik', 'Society and politics'), m:'^@yhteiskunta$'},
+    {t:L('Talous ja työelämä', 'Ekonomi och arbetsliv', 'Economy and work'), m:'^@talous$'},
+    {t:L('Tiede ja teknologia', 'Vetenskap och teknik', 'Science and technology'), m:'^@tiede$'},
+    {t:L('Luonto ja eläimet', 'Natur och djur', 'Nature and animals'), m:'^@luonto$'},
+    {t:L('Terveys ja hyvinvointi', 'Hälsa och välmående', 'Health and wellbeing'), m:'^@terveys$'},
+    {t:L('Psykologia ja ihmissuhteet', 'Psykologi och relationer', 'Psychology and relationships'), m:'^@psykologia$'},
+    {t:L('Filosofia ja uskonto', 'Filosofi och religion', 'Philosophy and religion'), m:'^@filosofia$'},
+    {t:L('Taide, musiikki ja kulttuuri', 'Konst, musik och kultur', 'Art, music and culture'), m:'^@kulttuuri$'},
+    {t:L('Kirjallisuus ja kieli', 'Litteratur och språk', 'Literature and language'), m:'^@kirjallisuus$'},
+    {t:L('Matkat ja maat', 'Resor och länder', 'Travel and places'), m:'^@matkat$'},
+    {t:L('Rikokset ja oikeus', 'Brott och rätt', 'Crime and justice'), m:'^@rikos$'},
+    {t:L('Urheilu ja liikunta', 'Idrott och motion', 'Sport and exercise'), m:'^@urheilu$'},
+    {t:L('Ruoka ja juoma', 'Mat och dryck', 'Food and drink'), m:'^@ruoka$'},
+    {t:L('Koti, puutarha ja käsityöt', 'Hem, trädgård och hantverk', 'Home, garden and crafts'), m:'^@koti$'},
+    {t:L('Perhe ja kasvatus', 'Familj och uppfostran', 'Family and parenting'), m:'^@perhe$'}
+  ]},
+  {id:'style', quick:true, max:2, w:3, text:L('Millaista otetta toivot?', 'Vilket grepp önskar du?', 'What kind of approach do you prefer?'), options:[
+    {t:L('Henkilökohtainen ja kokemuksellinen', 'Personligt och upplevt', 'Personal and first-hand'), m:'^(muistelmat|omaelämäkerrat|kokemukset|kokemuskertomukset|päiväkirjat|kirjeet|elämäntarinat|@muistelmat)$'},
+    {t:L('Esseistinen ja pohdiskeleva', 'Essäistiskt och reflekterande', 'Essayistic and reflective'), m:'^(esseet|esseekokoelmat|pakinat|kolumnit|aforismit|pohdinnat|@esseet)$'},
+    {t:L('Journalistinen ja tutkiva', 'Journalistiskt och granskande', 'Journalistic and investigative'), m:'^(reportaasit|journalismi|tutkiva journalismi|haastattelut|tietokirjallisuus \\(journalismi\\)|@reportaasi)$'},
+    {t:L('Yleistajuinen tietopaketti', 'Populärvetenskapligt', 'Popular science'), m:'^(yleistajuiset esitykset|populaaritiede|tiedeviestintä|@tietopaketti)$'},
+    {t:L('Käytännöllinen opas', 'Praktisk guide', 'Practical guide'), m:'^(oppaat|oppaat \\(teokset\\)|ruokaohjeet|keittokirjat|käsityöohjeet|ohjeet|harjoitukset|@opas)$'},
+    {t:L('Kuvateos', 'Bildverk', 'Illustrated book'), m:'^(kuvateokset|valokuvateokset|valokuvat|@kuvateos)$'}
+  ]},
+  {id:'place', max:2, w:2, text:L('Mitä aluetta kirja saa käsitellä?', 'Vilket område får boken handla om?', 'Which part of the world?'), options:[
+    {t:L('Suomi', 'Finland', 'Finland'), m:'^(suomi|helsinki|tampere|turku|oulu|lappi|karjala|pohjanmaa|savo|häme|uusimaa|kainuu|ahvenanmaa|suomalaiset|suomalaisuus)$'},
+    {t:L('Muut Pohjoismaat ja Baltia', 'Övriga Norden och Baltikum', 'Other Nordic and Baltic countries'), m:'^(ruotsi|norja|tanska|islanti|viro|latvia|liettua|pohjoismaat|baltian maat|tukholma|tallinna)$'},
+    {t:L('Venäjä ja Itä-Eurooppa', 'Ryssland och Östeuropa', 'Russia and Eastern Europe'), m:'^(venäjä|neuvostoliitto|ukraina|puola|itä-eurooppa|valko-venäjä|pietari|moskova|siperia|balkan|unkari|tšekki)$'},
+    {t:L('Muu Eurooppa', 'Övriga Europa', 'Rest of Europe'), m:'^(eurooppa|saksa|ranska|iso-britannia|englanti|italia|espanja|kreikka|irlanti|skotlanti|alankomaat|sveitsi|itävalta|portugali|lontoo|pariisi|rooma|berliini|euroopan unioni)$'},
+    {t:L('Pohjois- ja Etelä-Amerikka', 'Nord- och Sydamerika', 'The Americas'), m:'^(yhdysvallat|kanada|meksiko|etelä-amerikka|latinalainen amerikka|brasilia|argentiina|kuuba|new york|kalifornia|amerikka)$'},
+    {t:L('Aasia ja Lähi-itä', 'Asien och Mellanöstern', 'Asia and the Middle East'), m:'^(aasia|kiina|japani|intia|korea|pohjois-korea|etelä-korea|thaimaa|vietnam|indonesia|lähi-itä|israel|iran|irak|syyria|afganistan|turkki|arabimaat|tiibet|nepal)$'},
+    {t:L('Afrikka', 'Afrika', 'Africa'), m:'^(afrikka|egypti|etelä-afrikka|kenia|tansania|namibia|etiopia|somalia|nigeria|kongo|marokko|ghana|sambia)$'},
+    {t:L('Avaruus ja maailmankaikkeus', 'Rymden och universum', 'Space and the universe'), m:'^(avaruus|maailmankaikkeus|tähtitiede|planeetat|avaruustutkimus|avaruuslennot|kosmologia|aurinkokunta)$'}
+  ]},
+  {id:'era', max:2, w:2, text:L('Mitä aikaa kirja saa käsitellä?', 'Vilken tid får boken handla om?', 'Which period should it cover?'), options:[
+    {t:L('Esihistoria ja antiikki', 'Förhistoria och antiken', 'Prehistory and antiquity'), m:'^(esihistoria|antiikki|kivikausi|pronssikausi|rautakausi|muinaishistoria|antiikin kreikka|antiikin rooma|egyptologia|evoluutio)$'},
+    {t:L('Keskiaika', 'Medeltiden', 'Middle Ages'), m:'^(keskiaika|viikingit|ristiretket|viikinkiaika|1[0-4]00-luku)$'},
+    {t:L('1500–1800-luku', '1500–1800-talet', '16th–19th century'), m:'^(1[5-8]00-luku|1[5-8][0-9]0-luku|isoviha|renessanssi|uskonpuhdistus|ruotsin vallan aika|autonomian aika|nälkävuodet)$'},
+    {t:L('1900-luvun alku ja sotavuodet', 'Tidigt 1900-tal och krigsåren', 'Early 1900s and the war years'), m:'^(19[0-4]0-luku|toinen maailmansota|ensimmäinen maailmansota|jatkosota|talvisota|suomen sisällissota|lapin sota|evakot)$'},
+    {t:L('1950–1990-luku', '1950–1990-talet', '1950s–1990s'), m:'^(19[5-9]0-luku|kylmä sota|jälleenrakennus|lama|kekkonen, urho)$'},
+    {t:L('Nykyaika ja tulevaisuus', 'Nutid och framtid', 'Today and the future'), m:'^(20[0-2]0-luku|2000-luku|nykyaika|tulevaisuus|ilmastonmuutokset|tekoäly|digitalisaatio|sosiaalinen media|internet)$'}
+  ]},
+  {id:'origin', quick:true, max:1, filter:true, text:L('Kotimaista vai käännettyä?', 'Inhemskt eller översatt?', 'Finnish or translated?'), options:[
+    {t:L('Kotimaista', 'Inhemskt', 'Finnish')}, {t:L('Käännöksiä', 'Översättningar', 'Translated')}, {t:L('Molempia', 'Båda', 'Both')}
+  ]},
+  {id:'age', quick:true, def:4, max:1, filter:true, text:L('Uutuuksia vai vanhempia kirjoja?', 'Nytt eller äldre?', 'New or older books?'), options:[
+    {t:L('Uudet, 2015 alkaen', 'Nya, från 2015', 'New, from 2015')}, {t:L('2000–2014', '2000–2014', '2000–2014')}, {t:L('1960–1999', '1960–1999', '1960–1999')},
+    {t:L('Vanhemmat, ennen 1960', 'Äldre, före 1960', 'Older, before 1960')}, {t:L('Ei väliä', 'Spelar ingen roll', 'Any')}, {t:L('Oma aikaväli', 'Egen tidsperiod', 'Custom range')}
+  ]},
+  {id:'known', quick:true, def:1, max:1, filter:true, text:L('Tunnettuja kirjoja vai löytöjä?', 'Kända böcker eller upptäckter?', 'Well-known books or discoveries?'), options:[
+    {t:L('Tunnettuja ja suosittuja', 'Kända och populära', 'Well-known and popular')}, {t:L('Sekä että', 'Både och', 'A mix')}, {t:L('Löytöjä', 'Upptäckter', 'Discoveries')}
+  ]},
+  {id:'length', def:3, max:1, filter:true, text:L('Kuinka pitkä kirjan pitäisi olla?', 'Hur lång ska boken vara?', 'How long should the book be?'), options:[
+    {t:L('Lyhyt, alle 200 sivua', 'Kort, under 200 sidor', 'Short, under 200 pages')}, {t:L('Keskipitkä, 200–400 sivua', 'Medellång, 200–400 sidor', 'Medium, 200–400 pages')},
+    {t:L('Pitkä, yli 400 sivua', 'Lång, över 400 sidor', 'Long, over 400 pages')}, {t:L('Ei väliä', 'Spelar ingen roll', 'Any')}
+  ]},
+  {id:'audio', max:1, filter:true, text:L('Pitääkö kirjasta olla äänikirja?', 'Ska boken finnas som ljudbok?', 'Must there be an audiobook?'), options:[
+    {t:L('Kyllä', 'Ja', 'Yes')}, {t:L('Ei väliä', 'Spelar ingen roll', 'Any')}
+  ]}
+];
+var NF_SLIDERS = [];
+var NF_PRESETS = [
+  [L('Juuri nyt suosittua', 'Populärt just nu', 'Popular right now'), {now:true}],
+  [L('Elämäkerrat ja muistelmat', 'Biografier och memoarer', 'Biographies and memoirs'), {genre:[0]}],
+  [L('Suomen historia', 'Finlands historia', 'Finnish history'), {genre:[1], place:[0]}],
+  [L('Sotahistoria', 'Krigshistoria', 'Military history'), {genre:[2]}],
+  [L('Tiede', 'Vetenskap', 'Science'), {genre:[5], style:[3]}],
+  [L('Luonto', 'Natur', 'Nature'), {genre:[6]}],
+  [L('Hyvinvointi', 'Välmående', 'Wellbeing'), {genre:[7, 8]}],
+  [L('Yhteiskunta', 'Samhälle', 'Society'), {genre:[3, 4]}],
+  [L('Matkat', 'Resor', 'Travel'), {genre:[12]}],
+  [L('Ruoka', 'Mat', 'Food'), {genre:[15]}],
+  [L('True crime', 'True crime', 'True crime'), {genre:[13]}],
+  [L('Löytöjä', 'Upptäckter', 'Discoveries'), {known:[2]}],
+  [L('Uutuudet', 'Nyheter', 'New releases'), {age:[0]}]
+];
+
+/* Perusteluja varten jokainen vaihtoehto tietää, mihin kysymykseen se kuuluu */
+[NOV_QUESTIONS, NF_QUESTIONS].forEach(function(qs){ qs.forEach(function(q){ q.options.forEach(function(o){ o.q = q.id; }); }); });

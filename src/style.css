@@ -305,3 +305,8 @@ fieldset.group legend h2{margin:0}
 .now-controls .setting{justify-content:space-between}
 .now-controls .chips{margin-top:2px}
 #nowMonthSeg button{text-transform:capitalize}
+
+/* Kirjalajin valinta ja tietokirjan alaotsikko */
+.modeseg{display:flex;width:100%;max-width:420px;margin-top:16px}
+.modeseg button{flex:1;min-height:44px;font-size:16px}
+.bk-sub{margin:-2px 0 0;font-size:15px;line-height:1.35;color:var(--label2);overflow-wrap:anywhere}

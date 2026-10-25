@@ -73,16 +73,28 @@ before = len(books)
 books = [r for r in books if not is_celia(r) and 'fin' in (r.get('languages') or ['fin'])]
 print('celia removed', before - len(books))
 
+def genres_of(r): return [str(g).lower().rstrip('.') for g in (r.get('genres') or [])]
+# Teokset, joista on romaani: samannimiset näytelmä- ja runoversiot erotetaan omiksi teoksikseen
+novel_keys = set()
+for r in books:
+    if 'romaanit' in genres_of(r):
+        t = title_of(r); a, last = author_of(r)
+        if t: novel_keys.add(norm(t) + '|' + norm(last))
 works = {}
 for r in books:
     t = title_of(r); a, last = author_of(r)
     if not t: continue
+    # Näytelmä- ja runoversiot pidetään erillään samannimisestä romaanista (esim. romaanista tehty näytelmä)
+    gl = genres_of(r)
     key = norm(t) + '|' + norm(last)
+    if key in novel_keys and 'romaanit' not in gl:
+        key += '#n' if 'näytelmät' in gl else ('#r' if 'runot' in gl else '')
     y = year_of(r)
     w = works.get(key)
     if not w:
         w = works[key] = {'t': t, 'a': a, 'y': y or 9999, 'p': '', 'py': 0, 'terms': collections.Counter(), 'f': 0, 'n': 0, 's': '', 'id': ''}
     w['n'] += 1
+    if 'romaanit' in gl: w['nr'] = w.get('nr', 0) + 1
     if y and y < w['y']: w['y'] = y; w['t'] = t
     pubs = r.get('publishers') or []
     if y >= w['py'] or not w['id']: w['id'] = r['id']
@@ -98,6 +110,16 @@ for r in books:
         num = re.search(r'\d+', str(s0.get('additional') or ''))
         if nm: w.setdefault('ser', collections.Counter())[(nm, int(num.group()) if num else 0)] += 1
 
+drop = set()
+for k, w in works.items():
+    # Romaanin satunnaiset näytelmä- tai runomerkinnät pois (ne kuuluvat erilliselle versiolle)
+    for f in ('näytelmät', 'runot', 'novellit'):
+        if w.get('nr') and w['terms'].get(f, 0) < 0.5 * w['n']: w['terms'].pop(f, None)
+    if k[-2:] in ('#n', '#r') and k[:-2] in works:
+        base = works[k[:-2]]
+        if base['n'] * 3 < w['n']: drop.add(k[:-2])   # "romaani" on todennäköisesti virheellinen merkintä
+        else: w['t'] += ' (näytelmä)' if k.endswith('#n') else ' (runot)'
+for k in drop: works.pop(k, None)
 # Aikakausitiedot erillisestä hausta
 try:
     eras = json.load(open('raw_era.json', encoding='utf-8'))
@@ -106,8 +128,9 @@ except Exception:
 for era, recs in eras.items():
     for r in recs:
         t = title_of(r); a, last = author_of(r)
-        w = works.get(norm(t) + '|' + norm(last))
-        if w: w['terms'][era] += 3
+        k0 = norm(t) + '|' + norm(last)
+        for w in (works.get(k0), works.get(k0 + '#n'), works.get(k0 + '#r')):
+            if w: w['terms'][era] += 3
 # Kirjasarjat: kustantajien julkaisusarjoissa on monta kirjailijaa, kirjasarjassa yleensä yksi
 ser_auth = collections.defaultdict(set)
 for w in works.values():
@@ -176,7 +199,7 @@ print(dict(fl))
 pass
 
 # Viimeistely: kokoomateokset pois ja rikkinäiset merkit korjaten
-COLL = re.compile(r'(kootut|valitut)\s+(teokset|romaanit|kertomukset|novellit)|^\d+\s+\w+(a|ä|ia|iä)$|^yhteisnide', re.I)
+COLL = re.compile(r'^teokset(\s*\d+)?$|(kootut|valitut)\s+(teokset|romaanit)|^\d+\s+(romaania|dekkaria|jännäriä|trilleriä|kirjaa)$|^yhteisnide', re.I)
 d = json.load(open('books.json', encoding='utf-8'))
 before = len(d['b'])
 comic = {i for i, t in enumerate(d['v']) if t in ('sarjakuvat', 'sarjakuvaromaanit', 'graafiset romaanit', 'mangat', 'manga', 'serier', 'tecknade serier')}

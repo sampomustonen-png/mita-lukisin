@@ -14,6 +14,7 @@ var CAT_NAMES = {
 function catName(c){ var o = CAT_NAMES[String(c).toLowerCase()]; return o ? tx(o) : c; }
 function monthName(m){ try{ return new Date(m.year, m.month - 1, 15).toLocaleDateString(LOCALE[LANG], {month:'long', year:'numeric'}); }catch(e){ return m.month + '/' + m.year; } }
 function isFiction(cat){ return /kaunokirjallisuus|pokkarit/i.test(cat); }
+function isNonfic(cat){ return /tietokirj/i.test(cat); }
 /* Nimi ja sukunimi vertailukelpoisiksi */
 function ttl(s){ return String(s || '').toLowerCase().replace(/\s+[–—-]\s+.*$/, '').replace(/\s*[:;\/(].*$/, '').replace(/[^0-9a-zåäöüéèæøß ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 function listAuthor(a){ /* "Kinnunen Tommi, Toinen Tekijä" -> "Tommi Kinnunen, Tekijä Toinen" */
@@ -33,7 +34,7 @@ async function loadMsl(){
     MSL.months.forEach(function(m){ m.lists.forEach(function(l){ l.items.forEach(function(it){ it.i = matchRow(it); }); }); });
     /* Paras sijoitus tuoreimmalla kuukaudella kaunokirjallisuuden listoilla, korttien merkintää varten */
     MSLI = {};
-    MSL.months[0].lists.forEach(function(l){ if(!isFiction(l.category)) return; l.items.forEach(function(it){ if(it.i >= 0 && (!MSLI[it.i] || it.r < MSLI[it.i])) MSLI[it.i] = it.r; }); });
+    MSL.months[0].lists.forEach(function(l){ if(!isFiction(l.category) && !isNonfic(l.category)) return; l.items.forEach(function(it){ if(it.i >= 0 && (!MSLI[it.i] || it.r < MSLI[it.i])) MSLI[it.i] = it.r; }); });
     if(!$('viewNow').hidden) renderNow();
   }catch(e){ MSL = null; }
 }
@@ -63,6 +64,7 @@ function renderNow(){
     lab.appendChild(inp); lab.appendChild(el('span', null, catName(l.category))); cs.appendChild(lab);
   });
   var list = lists.filter(function(l){ return l.category === NOW.c; })[0];
+  if(list && isNonfic(list.category) && NF_STATE === 0) loadNF();
   var w = $('nowList'); w.innerHTML = '';
   if(!list) return;
   list.items.forEach(function(it){
@@ -85,11 +87,12 @@ $('nowCats').addEventListener('change', function(e){ if(e.target.name === 'nowca
 });
 /* Pikavalinta "Juuri nyt suosittua": tuoreimpien listojen kaunokirjat parhaan sijoituksen mukaan */
 function recommendNow(){
-  if(!D) return;
+  if(!ready()) return;
+  var want = MODE === 'nf' ? isNonfic : isFiction;
   if(!MSL){ $('results').hidden = false; $('recList').innerHTML = ''; $('resultsSub').textContent = T('nowError'); return; }
   var best = {}, seen = {};
   MSL.months[0].lists.forEach(function(l){
-    if(!isFiction(l.category)) return;
+    if(!want(l.category)) return;
     l.items.forEach(function(it){
       var key = it.i >= 0 ? 'i' + it.i : ttl(it.t) + '|' + it.a;
       if(!best[key] || it.r < best[key].r) best[key] = {r:it.r, it:it, cat:l.category, f:l.format};

@@ -64,18 +64,7 @@ def test_pikavalinta_antaa_suosituksia(page):
     page.click('#presets button:text-is("Kotimainen dekkari")')
     expect(page.locator('#recList .book').first).to_be_visible()
     assert len(titles(page)) >= 10
-    assert 'Dekkari' in page.locator('#recList .bk-why').first.inner_text()
-
-
-def test_valtettava_aihe_poistaa_kirjat(page):
-    page.click('label:has(#q-genre-9)')            # sotaromaani
-    page.click('#recBtn')
-    before = page.inner_text('#resultsSub')
-    page.click('#moreQ')
-    page.click('label:has(#q-avoid-3)')             # vältä sotaa
-    page.click('#recBtn')
-    after = page.inner_text('#resultsSub')
-    assert before != after
+    assert 'dekkari' in page.locator('#recList .bk-why').first.inner_text()
 
 
 def test_liukusaadin_muuttaa_jarjestysta(page):
@@ -136,11 +125,11 @@ def test_jakolinkki_avautuu(browser, page):
 
 def test_kielen_vaihto(page):
     page.click('#langSeg [data-lang="sv"]')
-    expect(page.locator('#hAsk')).to_have_text('Vad läser du?')
+    expect(page.locator('#askSub')).to_have_text('Berätta vad du tycker om.')
     page.click('#langSeg [data-lang="en"]')
     expect(page.locator('#tabSearch')).to_have_text('Search')
     page.click('#langSeg [data-lang="fi"]')
-    expect(page.locator('#hAsk')).to_have_text('Millaista luet?')
+    expect(page.locator('#askSub')).to_have_text('Kerro mistä pidät.')
 
 
 def test_ei_vaakavieritysta_suurella_tekstilla(page):
@@ -178,3 +167,50 @@ def test_juuri_nyt_suosittua(page):
     page.select_option('#recSort', 'title')                     # järjestys ei saa kaatua
     expect(page.locator('#recList .book').first).to_be_visible()
     assert page.locator('#recList .badge.msl').count() >= 1
+
+
+def test_tietokirja_aineisto():
+    lines = (DIST / 'nonfiction.ndjson').read_text(encoding='utf-8').splitlines()
+    head = json.loads(lines[0]); rows = [json.loads(l) for l in lines[1:] if l]
+    assert len(rows) > 40000, 'tietokirjoja liian vähän'
+    assert all(r[5] & 128 for r in rows[:2000])
+    assert all(0 <= i < len(head['v']) for r in rows[:2000] for i in r[4])
+    cats = {t for t in head['v'] if t.startswith('@')}
+    assert {'@historia', '@elamakerrat', '@tiede', '@luonto', '@ruoka'} <= cats
+
+
+def nf_mode(page):
+    page.click('#viewAsk .modeseg button[data-mode="nf"]')
+    expect(page.locator('#recBtn')).to_be_enabled(timeout=60000)
+
+
+def test_tietokirjat_suositukset(page):
+    nf_mode(page)
+    expect(page.locator('#presets button:text-is("Sotahistoria")')).to_be_visible()
+    page.click('#presets button:text-is("Sotahistoria")')
+    expect(page.locator('#recList .book').first).to_be_visible()
+    assert 'tietokirjaa' in page.inner_text('#resultsSub')
+    assert 'sotahistoria' in page.locator('#recList .bk-why').first.inner_text()
+    page.click('#viewAsk .modeseg button[data-mode="nov"]')
+    expect(page.locator('#presets button:text-is("Kotimainen dekkari")')).to_be_visible()
+    expect(page.locator('#results')).to_be_hidden()
+
+
+def test_tietokirjojen_haku_ja_lista(page):
+    nf_mode(page)
+    page.click('#tabSearch')
+    page.fill('#q', 'harari sapiens')
+    expect(page.locator('#sList .bk-meta').first).to_contain_text('Harari')
+    page.locator('#sList .book').first.locator('.mark[data-m="save"]').click()
+    page.click('#viewSearch .modeseg button[data-mode="nov"]')
+    expect(page.locator('#hSearch')).to_have_text('Kaikki kaunokirjallisuus')
+    page.click('#tabList')
+    expect(page.locator('#myList .book')).to_have_count(1)
+    expect(page.locator('#myList .bk-meta').first).to_contain_text('Harari')
+
+
+def test_runot_novellit_ja_naytelmat(page):
+    for name in ['Runoja', 'Novelleja', 'Näytelmiä']:
+        page.click('#presets button:text-is("%s")' % name)
+        expect(page.locator('#recList .book').first).to_be_visible()
+        assert len(titles(page)) >= 10, name

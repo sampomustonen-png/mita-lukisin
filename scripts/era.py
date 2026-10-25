@@ -8,8 +8,13 @@ def get(q):
             with urllib.request.urlopen(urllib.request.Request(u,headers={"User-Agent":"mita-lukisin/1.0 (+https://github.com)"}),timeout=60) as r: return json.load(r)
         except Exception: time.sleep(2+3*a)
     return {}
+import sys
+GENRES = sys.argv[1].split(",") if len(sys.argv) > 1 else ["Romaanit", "Runot", "Novellit", "Näytelmät", "Proosarunot", "Lyhytproosa", "Aforismit"]
+SFX = sys.argv[2] if len(sys.argv) > 2 else ""
+# Useampi laji samalla haulla: Finnan TAI-suodatin (~)
+GF = [("filter[]", '~genre_facet:"%s"' % g) for g in GENRES]
 def base(era,page):
-    return [("filter[]",'format:"0/Book/"'),("filter[]",'language:"fin"'),("filter[]",'genre_facet:"Romaanit"'),("filter[]",f'era_facet:"{era}"'),
+    return [("filter[]",'format:"0/Book/"'),("filter[]",'language:"fin"')]+GF+[("filter[]",f'era_facet:"{era}"'),
             ("limit","100"),("page",str(page)),("sort","title"),("field[]","shortTitle"),("field[]","title"),("field[]","nonPresenterAuthors")]
 out={}
 for era in ERAS:
@@ -18,4 +23,4 @@ for era in ERAS:
     with cf.ThreadPoolExecutor(4) as ex:
         for rs in ex.map(lambda p:(time.sleep(.15),get(base(era,p)).get("records",[]))[1], range(2,pages+1)): recs+=rs
     out[era]=recs; print(era,n,len(recs),flush=True)
-json.dump(out,open("raw_era.json","w",encoding="utf-8"),ensure_ascii=False); print("ERA DONE",flush=True)
+json.dump(out,open("raw_era%s.json" % SFX,"w",encoding="utf-8"),ensure_ascii=False); print("ERA DONE",flush=True)

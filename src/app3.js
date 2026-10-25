@@ -71,8 +71,8 @@ $('importFile').addEventListener('change', function(){
       Object.keys(d.marks).forEach(function(k){ var m = d.marks[k]; if(m === 'save' || m === 'read' || m === 'no'){ if(marks[k] !== m) n++; marks[k] = m; } });
       d.saved.forEach(function(b){
         if(!Array.isArray(b) || typeof b[0] !== 'string') return;
-        ensureMaps(); var k = keyOf(b), i = KEYIDX[k], row = i != null ? B[i] : b;
-        if(!saved.some(function(x){ return keyOf(x) === k; })) saved.push(row.slice());
+        ensureMaps(); var k = keyOf(b), i = KEYIDX[k], row = i != null ? portable(B[i]) : b;
+        if(!saved.some(function(x){ return keyOf(x) === k; })) saved.push(row);
       });
       saved = saved.filter(function(b){ return marks[keyOf(b)] === 'save'; });
       persistMarks(); renderMyList();
@@ -110,14 +110,17 @@ $('shareRecs').addEventListener('click', function(){
   share('r', rows);
 });
 var SHARED = null;
-function openSharedFromHash(){
-  var m = /^#jaa=([lr])\.([A-Za-z0-9_-]+)$/.exec(location.hash || ''); if(!m || !D) return;
+function openSharedFromHash(h){
+  h = h || location.hash || '';
+  var m = /^#jaa=([lr])\.([A-Za-z0-9_-]+)$/.exec(h); if(!m || !D) return;
   var ids; try{ ids = b64d(m[2]).split('~'); }catch(e){ return; }
   ensureMaps();
   var rows = ids.map(function(id){
     var i = id.indexOf('k:') === 0 ? KEYIDX[id.slice(2)] : IDMAP[id];
     return i != null ? B[i] : null;
   }).filter(Boolean);
+  /* Osa kirjoista puuttuu: ne voivat olla tietokirjoja, jotka ladataan erikseen */
+  if(rows.length < ids.length && NF_STATE === 0){ loadNF().then(function(){ openSharedFromHash(h); }); return; }
   if(!rows.length) return;
   SHARED = {type:m[1], rows:rows};
   renderShared(); showView('list');
@@ -140,7 +143,7 @@ $('sharedSave').addEventListener('click', function(){
 $('sharedClose').addEventListener('click', function(){ SHARED = null; renderShared(); });
 
 /* ---------- Uutuudet suoraan Finnasta ----------
-   Julkisessa versiossa sivu hakee avautuessaan viimeksi kirjastoihin luetteloidut romaanit Finnan avoimesta rajapinnasta.
+   Julkisessa versiossa sivu hakee avautuessaan viimeksi kirjastoihin luetteloidut kaunokirjat Finnan avoimesta rajapinnasta.
    Claude-näkymä ei salli yhteyksiä muihin palveluihin, joten siellä haku ohitetaan. */
 var LIVE_N = 0;
 var LIVE_STOP = /^(suomenkielinen kirjallisuus|romaanit|kaunokirjallisuus|käännökset|suomen kieli|finska|finsk litteratur|romaner|översättningar|skönlitteratur|äänikirjat|e-kirjat|e-äänikirjat|kotimainen kaunokirjallisuus|fiktio|romaani|ljudböcker|e-böcker)$/;
@@ -182,8 +185,8 @@ async function fetchLive(){
     await ensureMapsAsync(); VIDX = {}; V.forEach(function(t, i){ VIDX[t] = i; });
     var base = 'https://api.finna.fi/v1/search?' + [
       'filter[]=' + encodeURIComponent('format:"0/Book/"'), 'filter[]=' + encodeURIComponent('language:"fin"'),
-      'filter[]=' + encodeURIComponent('genre_facet:"Romaanit"'), 'sort=' + encodeURIComponent('first_indexed desc'), 'limit=100'
-    ].concat(['id', 'shortTitle', 'title', 'nonPresenterAuthors', 'year', 'subjects', 'genres', 'publishers', 'series', 'physicalDescriptions', 'languages'].map(function(f){ return 'field[]=' + f; })).join('&');
+      'sort=' + encodeURIComponent('first_indexed desc'), 'limit=100'
+    ].concat(['Romaanit', 'Runot', 'Novellit', 'Näytelmät'].map(function(g){ return 'filter[]=' + encodeURIComponent('~genre_facet:"' + g + '"'); })).concat(['id', 'shortTitle', 'title', 'nonPresenterAuthors', 'year', 'subjects', 'genres', 'publishers', 'series', 'physicalDescriptions', 'languages'].map(function(f){ return 'field[]=' + f; })).join('&');
     var added = 0;
     for(var page = 1; page <= 3; page++){
       var res = await fetch(base + '&page=' + page); if(!res.ok) break;
@@ -197,13 +200,64 @@ async function fetchLive(){
     }
     if(added){
       LIVE_N = added;
-      $('askSub').textContent = T('askSub', {n:fmt(B.length)});
       $('loadNote').textContent = T('liveNew', {n:fmt(added)});
-      if(!$('viewSearch').hidden && !$('q').value && !sState.sim) renderSearch(); else if(sState.base && !sState.sim) sState.base = null;
+      if(!$('viewSearch').hidden && MODE === 'nov' && !$('q').value && !sState.sim) renderSearch(); else if(sState.base && !sState.sim) sState.base = null;
       if(MSL){ TTL = null; loadMsl(); }
     }
   }catch(e){ /* Uutuuksien haku on lisä: sovellus toimii ilman sitä. */ }
 }
+
+/* ---------- Tietokirjauutuudet suoraan Finnasta ----------
+   Kun tietokirjat on ladattu, haetaan Helmet-kirjastoihin viimeksi luetteloidut tietokirjat. Aiheluokka päätellään
+   kirjaston luokituksesta (YKL) samoin kuin kuukausittaisessa aineistopäivityksessä (scripts/nf_process.py). */
+var NF_YKL = [[/^99/, 'elamakerrat'], [/^39/, 'sota'], [/^9/, 'historia'], [/^07/, 'yhteiskunta'], [/^0[0346]/, 'kulttuuri'],
+  [/^(1[0-3]|15|16|2)/, 'filosofia'], [/^(14|17)/, 'psykologia'], [/^(3[0-5]|37|38)/, 'yhteiskunta'], [/^36/, 'talous'],
+  [/^4[0-8]/, 'matkat'], [/^49/, 'kulttuuri'], [/^(50|56|57|58)/, 'luonto'], [/^5[1-5]/, 'tiede'], [/^59/, 'terveys'],
+  [/^6[0-2]/, 'tiede'], [/^(63|64|69)/, 'talous'], [/^6[5-8]/, 'koti'], [/^79/, 'urheilu'], [/^7/, 'kulttuuri'], [/^(80|81|86|87|88)/, 'kirjallisuus']];
+var NF_LIVE_EXCL = /oppikirjat|hakuteokset|sanakirjat|vuosikirjat|väitöskirjat|opinnäytteet|raportit|käsikirjat|harjoituskirjat|lastenkirjallisuus|nuortenkirjallisuus|kaunokirjallisuus|romaanit|runot|novellit|näytelmät|sarjakuvat|kuvakirjat|ylioppilastehtävät/;
+var NF_LIVE_PUB = /yliopisto|university|korkeakoulu|ministeriö|tilastokeskus|valtioneuvosto|eduskunta|tutkimuslaitos|tutkimuskeskus|terveyden ja hyvinvoinnin laitos|opetushallitus|sanoma pro|edita|talentum|alma talent|celia/i;
+async function fetchLiveNF(){
+  if(IN_CLAUDE || !window.fetch || NF_STATE !== 2) return;
+  try{
+    ensureMaps();
+    var vi = {}; V.forEach(function(t, i){ vi[t] = i; });
+    VIDX = vi; /* liveRow lisää uudet asiasanat tähän hakemistoon */
+    var base = 'https://api.finna.fi/v1/search?' + [
+      'filter[]=' + encodeURIComponent('format:"0/Book/"'), 'filter[]=' + encodeURIComponent('language:"fin"'),
+      'filter[]=' + encodeURIComponent('building:"0/Helmet/"'), 'sort=' + encodeURIComponent('first_indexed desc'), 'limit=100'
+    ].concat(['Kaunokirjallisuus', 'Lastenkirjallisuus', 'Nuortenkirjallisuus', 'Romaanit', 'Oppikirjat', 'Runot', 'Sarjakuvat'].map(function(g){ return 'filter[]=' + encodeURIComponent('-genre_facet:"' + g + '"'); }))
+     .concat(['id', 'shortTitle', 'title', 'nonPresenterAuthors', 'year', 'subjects', 'genres', 'publishers', 'physicalDescriptions', 'languages', 'classifications', 'formats'].map(function(f){ return 'field[]=' + f; })).join('&');
+    var added = 0;
+    for(var page = 1; page <= 3; page++){
+      var res = await fetch(base + '&page=' + page); if(!res.ok) break;
+      var d = await res.json();
+      (d.records || []).forEach(function(r){
+        var row = liveRow(r); if(!row || !(row[2] >= THIS_YEAR - 2)) return;
+        var blob = (r.genres || []).concat(r.subjects ? [].concat.apply([], r.subjects) : []).join(' ').toLowerCase();
+        if(/(käsikirja|sanakirja|oppikirja|vuosikirja|tietosanakirja|harjoituskirja|tehtäväkirja|matrikkeli)(\b|t\b|n\b)/i.test(String(r.title || ''))) return;
+        if(NF_LIVE_EXCL.test(blob) || (r.publishers || []).some(function(x){ return NF_LIVE_PUB.test(String(x)); })) return;
+        if((r.formats || []).some(function(f){ return /Daisy/.test(f.value || ''); })) return;
+        var ykl = ((r.classifications || {}).ykl || [])[0] || '', cat = '';
+        for(var k = 0; k < NF_YKL.length; k++) if(NF_YKL[k][0].test(ykl)){ cat = NF_YKL[k][1]; break; }
+        if(!cat && /muistelmat|elämäkerrat/.test(blob)) cat = 'elamakerrat';
+        if(!cat || /^8[2-5]|^0[12]|^89/.test(ykl)) return;
+        var full = String(r.title || '').replace(/\s*[\/:;=]\s*$/, ''), parts = full.split(/\s+:\s+/);
+        row[0] = parts[0].replace(/[ .;\/=]+$/, '') || row[0];
+        row[11] = parts[1] ? parts[1].replace(/[ .;\/=]+$/, '') : '';
+        var ci = vi['@' + cat]; if(ci == null) return;
+        row[4] = [ci].concat(row[4]).slice(0, 22);
+        if(/muistelmat|omaelämäkerrat/.test(blob) && vi['@muistelmat'] != null) row[4].splice(1, 0, vi['@muistelmat']);
+        row[5] = (row[5] & ~(F_DOM | F_TR)) | F_NF | F_LIVE | ((r.nonPresenterAuthors || []).some(function(x){ return /kääntäjä/.test(x.role || ''); }) ? F_TR : F_DOM);
+        while(row.length < 12) row.push(row.length === 11 ? '' : 0);
+        var key = keyOf(row); if(KEYIDX[key] != null) return;
+        KEYIDX[key] = B.length; if(row[8]) IDMAP[row[8]] = B.length;
+        B.push(row); added++;
+      });
+    }
+    if(added && MODE === 'nf'){ LIVE_NF = added; $('loadNote').textContent = T('liveNew', {n:fmt(added)}); if(!$('viewSearch').hidden && !$('q').value && !sState.sim) renderSearch(); else if(sState.base && !sState.sim) sState.base = null; }
+  }catch(e){ /* lisäominaisuus: sovellus toimii ilman sitä */ }
+}
+var LIVE_NF = 0;
 
 /* ---------- Oma lista Claude-tilille ----------
    Kun sivu on avattu Claudessa, lista tallentuu katsojan omaan, yksityiseen tallennustilaan (data/users/<tunnus>/omalista).
@@ -261,13 +315,11 @@ async function initCloud(){
 }
 
 /* ---------- Käynnistys ---------- */
+useModeSets();
 applyStatic();
 buildForm();
 buildPresets();
-(function(){
-  var s = store.get('mk.answers', null);
-  if(s){ applyAnswers(s.a || {}); $('liked').value = s.liked || ''; }
-})();
+restoreAnswers();
 updateSync();
 initCloud();
 load();

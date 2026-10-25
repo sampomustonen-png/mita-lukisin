@@ -6,7 +6,7 @@ function setMark(b, m, force){
   var k = keyOf(b);
   if(marks[k] === m && !force) delete marks[k]; else marks[k] = m;
   saved = saved.filter(function(x){ return keyOf(x) !== k; });
-  if(marks[k] === 'save') saved.unshift(b.slice());
+  if(marks[k] === 'save') saved.unshift(portable(b));
   persistMarks();
   document.querySelectorAll('.book').forEach(function(card){ if(card.dataset.k === k) syncMarks(card, k); });
   renderMyList();
@@ -64,15 +64,16 @@ function bookCard(b, why, hits){
   if(b[10] >= 1000) h.appendChild(el('span', 'badge loan', T('loanBadge')));
   var mr = mslRankOf(b); if(mr) h.appendChild(el('span', 'badge msl', T('mslBadge', {r:mr})));
   body.appendChild(h);
-  var meta = [b[1] || T('unknownAuthor'), b[2] || '', P[b[3]] || '', b[9] ? b[9] + ' ' + T('pagesAbbr') : ''].filter(Boolean).join(' · ');
+  if(b[11]) body.appendChild(el('p', 'bk-sub', b[11]));
+  var meta = [b[1] || (isNF(b) ? '' : T('unknownAuthor')), b[2] || '', pubText(b), b[9] ? b[9] + ' ' + T('pagesAbbr') : ''].filter(Boolean).join(' · ');
   body.appendChild(el('p', 'bk-meta', meta));
   if(b[7]){ var sp = String(b[7]).split('|'); body.appendChild(el('p', 'bk-series', sp[0] + (sp[1] ? ', ' + T('part') + ' ' + sp[1] : ''))); }
   if(why) body.appendChild(el('p', 'bk-why', why));
   var hitSet = hits || {}, tags = el('ul', 'tags');
   if(T('tagsLang')) tags.setAttribute('aria-label', T('tagsLang'));
-  var shown = b[4].filter(function(i){ var t = V[i] || ''; return t && t.indexOf('fiktiivinen') < 0 && t.indexOf(',') < 0 && t.indexOf('(') !== 0; });
+  var shown = b[4].filter(function(i){ var t = termText(i); return t && t.charAt(0) !== '@' && t.indexOf('fiktiivinen') < 0 && t.indexOf(',') < 0 && t.indexOf('(') !== 0; });
   shown.sort(function(x, y){ return (hitSet[y] ? 1 : 0) - (hitSet[x] ? 1 : 0); });
-  shown.slice(0, 7).forEach(function(i){ var li = el('li', hitSet[i] ? 'hit' : null, V[i]); li.lang = 'fi'; tags.appendChild(li); });
+  shown.slice(0, 7).forEach(function(i){ var li = el('li', hitSet[i] ? 'hit' : null, termText(i)); li.lang = 'fi'; tags.appendChild(li); });
   if(tags.children.length) body.appendChild(tags);
   var act = el('div', 'bk-actions');
   [['save', 'save'], ['read', 'read'], ['no', 'notInterested']].forEach(function(m){
@@ -135,6 +136,7 @@ function optionSets(a){
 }
 function avoidSets(a){
   var q = QUESTIONS.filter(function(x){ return x.id === 'avoid'; })[0];
+  if(!q) return [];
   return (a.avoid || []).map(function(k){ return termSet(q.options[k].m); });
 }
 function sliderSets(a){
@@ -168,9 +170,10 @@ function passFilters(b, a){
 }
 function likedProfile(){
   /* Etsii aineistosta kirjat, jotka lukija mainitsi, ja kerää niiden asiasanat */
-  var txt = fold($('liked').value), found = {}, terms = {}, n = 0;
-  if(txt.length < 4) return {found:found, terms:terms, n:0};
+  var txt = fold($('liked').value), found = {}, terms = {}, n = 0, books = [];
+  if(txt.length < 4) return {found:found, terms:terms, n:0, books:books};
   for(var i = 0; i < B.length && n < 12; i++){
+    if(!inMode(B[i])) continue;
     var t = fold(B[i][0]);
     if(t.length < 4 || txt.indexOf(t) < 0) continue;
     var re = new RegExp('(^|[^a-z0-9åäö])' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-z0-9åäö])');
@@ -179,8 +182,9 @@ function likedProfile(){
     if(t.length < 8 && sur && txt.indexOf(sur) < 0) continue;
     found[keyOf(B[i])] = 1; n++;
     B[i][4].forEach(function(id){ terms[id] = (terms[id] || 0) + 1; });
+    books.push({t:B[i][0], set:new Set(B[i][4])});
   }
-  return {found:found, terms:terms, n:n};
+  return {found:found, terms:terms, n:n, books:books};
 }
 function feedbackProfile(){
   /* Tallennetut (+1) ja luetut (+0,5) nostavat samankaltaisia, Ei kiinnosta (−1) laskee */
@@ -200,16 +204,18 @@ function rank(a){
   var disc = (a.known || [1])[0], popW = [1.1, 0.5, 0.15][disc], orig = (a.origin || [2])[0], lenSel = (a.length || [3])[0];
   var scored = [];
   for(var i = 0; i < B.length; i++){
-    var b = B[i], k = keyOf(b);
+    var b = B[i];
+    if(!inMode(b)) continue;
+    var k = keyOf(b);
     if(marks[k] === 'read' || marks[k] === 'no') continue;
     if(!passFilters(b, a)) continue;
     var terms = b[4], skip = false;
     for(var x = 0; x < avoid.length; x++) if(hasAny(terms, avoid[x])){ skip = true; break; }
     if(skip) continue;
-    var score = 0, hits = {}, genreHit = !genres.length, matched = [];
+    var score = 0, hits = {}, topic = [], genreHit = !genres.length, matched = [], likedT = '';
     for(var s = 0; s < sets.length; s++){
       var S = sets[s], hit = false;
-      for(var j = 0; j < terms.length; j++) if(S.set.has(terms[j])){ hits[terms[j]] = 1; hit = true; }
+      for(var j = 0; j < terms.length; j++) if(S.set.has(terms[j])){ hits[terms[j]] = 1; hit = true; if(S.q !== 'genre' && S.q !== 'style' && topic.indexOf(terms[j]) < 0) topic.push(terms[j]); }
       if(hit){ score += S.w; matched.push(S.o); if(S.q === 'genre') genreHit = true; }
     }
     var slHit = 0;
@@ -220,7 +226,14 @@ function rank(a){
     if(liked.n){
       if(liked.found[k]) continue;
       var sim = 0; for(var j2 = 0; j2 < terms.length; j2++) if(liked.terms[terms[j2]]) sim++;
-      if(sim){ score += Math.min(sim, 6) * 0.8; if(sim >= 2) matched.push('fav'); }
+      if(sim){
+        score += Math.min(sim, 6) * 0.8;
+        if(sim >= 2){
+          var bestN = 1;
+          liked.books.forEach(function(lb){ var c = 0; for(var q = 0; q < terms.length; q++) if(lb.set.has(terms[q])) c++; if(c > bestN){ bestN = c; likedT = lb.t; } });
+          if(!likedT) matched.push('fav');
+        }
+      }
     }
     if(!genreHit || ((sets.length || sl.length) && score <= 0 && !slHit && !(liked.n && matched.length))) continue;
     if(fb.n){
@@ -230,24 +243,82 @@ function rank(a){
     }
     var pb = pop(b);
     score += pb * popW;
-    if(disc === 2){ score -= Math.max(0, pb - 3) * 0.8; if(b[3] < 0 || b[3] >= 25) score += 0.8; } /* Löytöjä */
+    if(disc === 2){ score -= Math.max(0, pb - 3) * 0.8; if(!BIGP[b[3]]) score += 0.8; } /* Löytöjä */
     if(orig !== 2 && isUnknown(b)) score -= 1.5; /* alkuperä epävarma: mukana, mutta alempana */
     if(lenSel !== 3 && !b[9]) score -= 2; /* pituus tuntematon */
-    scored.push({i:i, score:score, hits:hits, matched:matched});
+    scored.push({i:i, score:score, hits:hits, matched:matched, topic:topic, liked:likedT, disc:disc});
   }
   scored.sort(function(x, y){ return y.score - x.score; });
   var per = {}, top = [], rest = [];
   scored.forEach(function(s){ var au = B[s.i][1]; per[au] = (per[au] || 0) + 1; (per[au] <= 2 ? top : rest).push(s); });
   return top.concat(rest);
 }
+/* ---------- Perustelut ----------
+   Kortin perustelu kootaan kirjan omista tiedoista: mihin valintoihin se osuu, mitkä aiheet osuivat,
+   mitä kirjaa se muistuttaa ja muutama lukijaa kiinnostava seikka (palkinnot, sarja, suosio, ikä). */
+function listText(arr){ return arr.length > 1 ? arr.slice(0, -1).join(', ') + ' ' + T('and') + ' ' + arr[arr.length - 1] : (arr[0] || ''); }
+function cap(t){ return t ? t.charAt(0).toUpperCase() + t.slice(1) : t; }
+function ensureIDF(){
+  if(IDF && IDF.length === V.length) return;
+  var df = new Float32Array(V.length); B.forEach(function(x){ x[4].forEach(function(i){ df[i]++; }); });
+  IDF = Array.prototype.map.call(df, function(c){ return Math.log((B.length + 1) / (c + 1)); });
+}
+var GENERIC_T = /kirjallisuus$|romaanit$|^(romaani|novellit|runot|näytelmät|suomi|finland|klassikot|klassiker|fiction|isotekstiset kirjat|kertomukset|lyhytproosa|aforismit|esseet|oppaat.*|muistelmat|elämäkerrat|naiset|miehet|ihmiset|elämä|kokemukset|historia|1900-luku|2000-luku)$/;
+/* Ruotsin- ja englanninkieliset rinnakkaisasiasanat jätetään perusteluista pois */
+var FOREIGN_T = /å|^(sverige|london|stockholm|helsingfors|finland|england|paris)$|(ning|ningar|het|heter|else|ande|ende|arna|erna|orna|mord|dikter|krig|kärlek|döden|familjer|relationer|resor|vänskap|kvinnor|ungdomar|identitet|are|romaner|böcker|ship|ness|ism|tion|ties|ings)$/;
+/* Paikannimet isolla alkukirjaimella (kirjastojen asiasanat ovat pienellä) */
+var PLACE_RE = null;
+function placeCase(t){
+  if(!PLACE_RE){ var ps = []; NOV_QUESTIONS.concat(NF_QUESTIONS).forEach(function(q){ if(q.id === 'place') q.options.forEach(function(o){ if(!/fantasia/.test(o.m)) ps.push(o.m); }); }); PLACE_RE = new RegExp(ps.join('|')); }
+  return PLACE_RE.test(t) && !/^(kaupungit|maaseutu|kylät|saaret|saaristo|meri|rannikot|erämaat|tunturit|avaruus|planeetat|aasia|afrikka)$/.test(t) ? t.replace(/(^|[\s-])([a-zåäö])/g, function(m, a, c){ return a + c.toUpperCase(); }) : t;
+}
+function showTerm(t){ return t && t.charAt(0) !== '@' && t.indexOf(',') < 0 && t.indexOf('(') < 0 && t.indexOf('fiktiivinen') < 0 && !GENERIC_T.test(t) && !FOREIGN_T.test(t) && t.length < 30; }
+var DF = null;
+function ensureDF(){ if(DF && DF.length === V.length) return; DF = new Uint32Array(V.length); B.forEach(function(x){ x[4].forEach(function(i){ DF[i]++; }); }); }
+function topicsOf(s, b){
+  var out = (s.topic || []).map(function(i){ return V[i]; }).filter(showTerm).slice(0, 3);
+  if(out.length < 2){
+    /* Lisätään kirjan omia, harvinaisia (luonnehtivia) asiasanoja */
+    /* Luonnehtivimmat: harvinaisia mutta eivät henkilöiden nimiä (nimet esiintyvät vain muutamassa kirjassa) */
+    ensureIDF(); ensureDF();
+    var own = b[4].slice(0, 14).filter(function(i){ return typeof i === 'number' && showTerm(V[i]) && DF[i] >= 12 && out.indexOf(V[i]) < 0; })
+      .sort(function(x, y){ return IDF[y] - IDF[x]; }).map(function(i){ return V[i]; });
+    out = out.concat(own).slice(0, 3);
+  }
+  return out;
+}
+function factsOf(s, b){
+  var f = [], terms = ' ' + b[4].map(termText).join(' | ') + ' ';
+  if(/finlandia-palkinto/.test(terms)) f.push(T('whyFinlandia'));
+  else if(/kirjallisuuspalkinnot|nobelin kirjallisuuspalkinto|tieto-finlandia/.test(terms)) f.push(T('whyAward'));
+  if(b[7]){ var sp = String(b[7]).split('|'); if(sp[1] === '1') f.push(T('whySeries1', {s:sp[0]})); }
+  if(b[10] >= 1000) f.push(T('whyLoans'));
+  else {
+    /* Suosion rajat: noin 5 % suosituimmista ja alempi puolisko (tietokirjoilla eri asteikko) */
+    var pv = pop(b), nf = isNF(b);
+    if(pv >= (nf ? 4.7 : 2.0) && s.disc !== 2) f.push(T('whyPopular'));
+    if(pv < (nf ? 3.9 : 1.62) && s.disc === 2) f.push(T('whyGem'));
+  }
+  if(b[2] && b[2] >= THIS_YEAR - 1) f.push(T('whyNew', {y:b[2]}));
+  else if(b[2] && b[2] < 1960 && pop(b) >= (isNF(b) ? 3.9 : 1.62)) f.push(T('whyClassic', {y:b[2]}));
+  return f.slice(0, 2);
+}
 function reasonOf(s){
-  if(!s.matched || !s.matched.length) return '';
-  var m = s.matched.map(function(x, n){
-    var t = x === 'fav' ? T('likeFav') : x === 'saved' ? T('likeSaved') : tx(x.t);
-    if(n === 0) return t.charAt(0).toUpperCase() + t.slice(1);
-    return /^(Helsinki|Helsingfors|Lappi|Lappland|Lapland|Euroopan|Finnish|Other Nordic)/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
+  var b = s.row || B[s.i]; if(!b) return '';
+  var out = [];
+  var m = (s.matched || []).filter(function(x){ return x !== 'fav' && x !== 'saved'; }).map(function(x, n){
+    var t = tx(x.t);
+    if(x.q === 'mood') t = T('moodPhrase', {m:t.toLowerCase()});
+    return /^(Helsinki|Helsingfors|Lappi|Lappland|Lapland|Euroopan|Finnish|Other Nordic|Suomi|Finland|Afrikka|Afrika|Africa|Aasia|Asien|Asia|Venäjä|Ryssland|Russia|Muut Pohjoismaat|Övriga Norden|Pohjois-|Nord-|The Americas|Avaruus)/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
   });
-  return (m.length > 1 ? m.slice(0, -1).join(', ') + ' ' + T('and') + ' ' + m[m.length - 1] : m[0]) + '.';
+  if(m.length) out.push(T('whyMatch', {m:listText(m)}));
+  var tp = topicsOf(s, b);
+  if(tp.length) out.push(T('whyTopics', {t:listText(tp.map(placeCase))}));
+  if(s.liked) out.push(T('whyLiked', {t:s.liked}));
+  else if((s.matched || []).indexOf('fav') >= 0) out.push(cap(T('likeFav')) + '.');
+  if((s.matched || []).indexOf('saved') >= 0) out.push(cap(T('likeSaved')) + '.');
+  out = out.concat(factsOf(s, b));
+  return out.join(' ');
 }
 function prefsText(a){
   var lines = QUESTIONS.map(function(q){
@@ -260,7 +331,7 @@ function prefsText(a){
 }
 var recState = {ranked:[], base:[], shown:0, ctl:null, a:null};
 function recommend(){
-  if(!D) return;
+  if(!ready()) return;
   var a = getAnswers(); saveAnswers();
   if(recState.ctl) recState.ctl.abort();
   var ranked = rank(a);
@@ -290,9 +361,9 @@ async function askClaude(){
   var a = recState.a, cand = recState.base.slice(0, 70);
   var list = cand.map(function(s, n){
     var b = B[s.i];
-    return n + ' | ' + b[0] + ' | ' + b[1] + ' | ' + (b[2] || '?') + ' | ' + b[4].slice(0, 10).map(function(i){ return V[i]; }).join(', ');
+    return n + ' | ' + b[0] + (b[11] ? ': ' + b[11] : '') + ' | ' + b[1] + ' | ' + (b[2] || '?') + ' | ' + b[4].slice(0, 12).map(termText).filter(function(t){ return t.charAt(0) !== '@'; }).join(', ');
   }).join('\n');
-  var prompt = 'Olet kokenut kirjastonhoitaja ja kirjallisuuskriitikko. Valitse lukijalle 10 parasta romaania alla olevasta ehdokaslistasta.\n\n'
+  var prompt = 'Olet kokenut kirjastonhoitaja ja kirjallisuuskriitikko. Valitse lukijalle 10 parasta ' + (MODE === 'nf' ? 'tietokirjaa' : 'kaunokirjallista teosta') + ' alla olevasta ehdokaslistasta.\n\n'
     + 'LUKIJAN TOIVEET\n' + prefsText(a) + '\n\n'
     + 'EHDOKKAAT (numero | nimi | tekijä | vuosi | kirjaston asiasanat)\n' + list + '\n\n'
     + 'Ohjeet:\n- Valitse vain listalta. Valitse sen perusteella, miten hyvin kirja sopii toiveisiin. Älä suosi kirjaa vain siksi, että se on tunnettu tai suosittu: ota mukaan myös vähemmän tunnettuja ja pienten kustantamojen teoksia, kun ne sopivat. Jos lukija toivoo löytöjä, suosi niitä selvästi.\n'
@@ -338,6 +409,14 @@ $('resetBtn').addEventListener('click', function(){
 $('aiBtn').addEventListener('click', askClaude);
 $('moreBtn').addEventListener('click', function(){ showMore(12); });
 
+/* Kaunokirjan muoto asiasanojen perusteella (kuvauspyyntöä varten) */
+function kindOf(b){
+  var t = ' ' + b[4].map(termText).join(' | ') + ' ';
+  if(/ (runot|proosarunot|aforismit) /.test(t) && !/ romaanit /.test(t)) return 'runoteoksesta';
+  if(/ näytelmät /.test(t)) return 'näytelmästä';
+  if(/ (novellit|lyhytproosa) /.test(t) && !/ romaanit /.test(t)) return 'novellikokoelmasta';
+  return 'romaanista';
+}
 /* ---------- Kuvaus (vain Claudessa) ----------
    Finnan kuvaukset ovat usein kustantajien takakansitekstejä, joiden käyttö muualla ei ole sallittua.
    Siksi kuvauksen kirjoittaa pyydettäessä Claude, joka saa ohjeen olla keksimättä mitään. */
@@ -347,12 +426,15 @@ async function describe(card){
   if(!box){ box = el('div', 'bk-desc'); box.setAttribute('role', 'status'); card.querySelector('.bk-actions').before(box); }
   box.innerHTML = ''; box.appendChild(el('span', null, T('describing')));
   var ser = b[7] ? String(b[7]).split('|') : null;
-  var prompt = 'Kirjoita lyhyt esittely romaanista ' + T('claudeLang') + '.\n\n'
-    + 'Nimi: ' + b[0] + '\nKirjailija: ' + (b[1] || 'tuntematon') + '\nEnsimmäinen suomenkielinen painos: ' + (b[2] || 'tuntematon')
+  var nf = isNF(b);
+  var form = nf ? 'tietokirjasta' : kindOf(b);
+  var prompt = 'Kirjoita lyhyt esittely ' + form + ' ' + T('claudeLang') + '.\n\n'
+    + 'Nimi: ' + b[0] + (b[11] ? ': ' + b[11] : '') + '\nTekijä: ' + (b[1] || 'tuntematon') + '\nEnsimmäinen suomenkielinen painos: ' + (b[2] || 'tuntematon')
     + (ser ? '\nSarja: ' + ser[0] + (ser[1] ? ', osa ' + ser[1] : '') : '')
-    + '\nKirjaston asiasanat: ' + b[4].slice(0, 20).map(function(i){ return V[i]; }).join(', ') + '\n\n'
+    + '\nKirjaston asiasanat: ' + b[4].slice(0, 20).map(termText).filter(function(t){ return t.charAt(0) !== '@'; }).join(', ') + '\n\n'
     + 'Tärkeää: älä keksi mitään. Aseta known arvoon true vain, jos tunnet juuri tämän kirjan (sama nimi ja kirjailija) varmasti. '
-    + 'Silloin kirjoita 2–4 lauseen esittely: lähtötilanne, keskeiset teemat ja tyyli ilman juonipaljastuksia. Mainitse henkilöiden nimiä vain, jos olet niistä varma. '
+    + (nf ? 'Silloin kirjoita 2–4 lauseen esittely: mitä kirja käsittelee, millainen sen näkökulma on ja kenelle se sopii. '
+          : 'Silloin kirjoita 2–4 lauseen esittely: lähtötilanne, keskeiset teemat ja tyyli ilman juonipaljastuksia. Mainitse henkilöiden nimiä vain, jos olet niistä varma. ')
     + 'Jos et tunne kirjaa varmasti, aseta known arvoon false ja kirjoita 1–2 lauseen kuvaus pelkästään asiasanojen perusteella, ilman yhtään asiasanoista puuttuvaa yksityiskohtaa. '
     + 'Älä aloita kirjan nimellä. Vastaa vain JSON-oliolla: {"known": true, "text": "..."}';
   try{
@@ -405,11 +487,12 @@ $('sSort').addEventListener('change', function(){
 /* ---------- Samankaltaiset ---------- */
 var IDF = null;
 function similarTo(b){
-  if(!IDF || IDF.length !== V.length){ var df = new Float32Array(V.length); B.forEach(function(x){ x[4].forEach(function(i){ df[i]++; }); }); IDF = Array.prototype.map.call(df, function(c){ return Math.log((B.length + 1) / (c + 1)); }); }
-  var mine = {}; b[4].forEach(function(i){ mine[i] = 1; });
-  var k0 = keyOf(b), res = [];
+  ensureIDF();
+  var mine = {}; b[4].forEach(function(i){ if(typeof i === 'number') mine[i] = 1; });
+  var k0 = keyOf(b), res = [], nf = isNF(b);
   for(var i = 0; i < B.length; i++){
     var x = B[i], s = 0, n = 0;
+    if(isNF(x) !== nf) continue;
     for(var j = 0; j < x[4].length; j++) if(mine[x[4][j]]){ s += IDF[x[4][j]]; n++; }
     if(n < 2 || keyOf(x) === k0) continue;
     if(n >= 5 && n >= 0.8 * b[4].length && n >= 0.8 * x[4].length) continue; /* sama teos toisella nimellä tai kielellä */
@@ -423,7 +506,9 @@ function similarTo(b){
 document.addEventListener('click', function(e){
   var bt = e.target.closest('[data-sim]'); if(!bt) return;
   var card = bt.closest('.book'); if(!card || !card._b || !D) return;
-  var b = card._b;
+  var b = currentRow(card._b);
+  if(isNF(b) && NF_STATE !== 2){ bt.disabled = true; loadNF().then(function(ok){ bt.disabled = false; if(ok) bt.click(); }); return; }
+  if(isNF(b) !== (MODE === 'nf')) setMode(isNF(b) ? 'nf' : 'nov');
   showView('search');
   $('q').value = '';
   var simRes = similarTo(b); simRes.forEach(function(r, k){ r._o = k; });
@@ -436,15 +521,16 @@ document.addEventListener('click', function(e){
 /* ---------- Haku ---------- */
 var sState = {res:[], shown:0}, sTimer = 0;
 function renderSearch(){
-  if(!D) return;
+  if(!ready()) return;
   ensureIdx();
   var q = fold($('q').value.trim()), toks = q ? q.split(/\s+/) : [];
   var fD = $('fDom').checked, fT = $('fTr').checked, fA = $('fAudio').checked, fN = $('fNew').checked, fY = $('fYoung').checked;
   var res = [];
   for(var i = 0; i < B.length; i++){
     var b = B[i], f = b[5];
+    if(!inMode(b)) continue;
     if(fD && !isDom(b)) continue; if(fT && !isTr(b)) continue; if(fA && !(f & F_AUDIO)) continue;
-    if(fN && !(b[2] >= 2015)) continue; if(fY && !(f & F_YOUNG)) continue;
+    if(fN && !(b[2] >= 2015)) continue; if(fY && MODE !== 'nf' && !(f & F_YOUNG)) continue;
     var s = IDX[i], ok = true;
     for(var t = 0; t < toks.length; t++) if(s.indexOf(toks[t]) < 0){ ok = false; break; }
     if(!ok) continue;
@@ -470,6 +556,6 @@ $('sMore').addEventListener('click', sMore);
 /* ---------- Oma lista ---------- */
 function renderMyList(){
   var wrap = $('myList'); wrap.innerHTML = '';
-  saved.forEach(function(b){ wrap.appendChild(bookCard(b)); });
+  saved.forEach(function(b){ wrap.appendChild(bookCard(currentRow(b))); });
   $('myEmpty').hidden = saved.length > 0;
 }

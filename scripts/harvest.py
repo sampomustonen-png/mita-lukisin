@@ -13,7 +13,7 @@ def get(u):
         except Exception as e:
             time.sleep(2 + a*3)
     return {"records":[]}
-def harvest(fmt, genre, out):
+def harvest_one(fmt, genre):
     first = get(url(fmt,1,genre)); n = first.get("resultCount",0); pages = (n+99)//100
     print(fmt, genre, n, pages, flush=True)
     recs = {r["id"]: r for r in first.get("records",[])}
@@ -23,7 +23,17 @@ def harvest(fmt, genre, out):
         for i, rs in enumerate(ex.map(job, range(2, pages+1))):
             for r in rs: recs[r["id"]] = r
             if i % 100 == 0: print(fmt, i, len(recs), flush=True)
+    return recs
+# Kaunokirjallisuuden lajit: romaanit, runot, novellit ja näytelmät (sekä lyhytproosa ja aforismit)
+GENRES = ["Romaanit", "Runot", "Novellit", "Näytelmät", "Proosarunot", "Lyhytproosa", "Aforismit"]
+def harvest(fmt, out, genres=GENRES):
+    recs = {}
+    for g in genres: recs.update(harvest_one(fmt, g))
     json.dump(list(recs.values()), open(out,"w",encoding="utf-8"), ensure_ascii=False)
     print("done", out, len(recs), flush=True)
-harvest("0/Book/", "Romaanit", "raw_books.json")
-harvest("0/Sound/", "Romaanit", "raw_audio.json")
+if __name__ == "__main__":
+    # Valinnaisesti: python harvest.py Runot,Novellit _x  (vain osa lajeista, tiedostonimiin pääte)
+    gs = sys.argv[1].split(",") if len(sys.argv) > 1 else GENRES
+    sfx = sys.argv[2] if len(sys.argv) > 2 else ""
+    harvest("0/Book/", "raw_books%s.json" % sfx, gs)
+    harvest("0/Sound/", "raw_audio%s.json" % sfx, gs)

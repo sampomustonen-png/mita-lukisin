@@ -13,9 +13,12 @@
 <main id="main" tabindex="-1">
 <section id="viewAsk" role="tabpanel" aria-labelledby="hAsk">
   <header class="lt">
-    <p class="eyebrow">Mitä lukisin</p>
-    <h1 id="hAsk" data-i18n="askTitle">Millaista luet?</h1>
+    <h1 id="hAsk">Mitä lukisin</h1>
     <p class="sub" id="askSub"></p>
+    <div class="seg modeseg" role="radiogroup" data-i18n-attr="aria-label:modeLabel">
+      <button type="button" role="radio" data-mode="nov" data-i18n="modeNov">Kaunokirjallisuus</button>
+      <button type="button" role="radio" data-mode="nf" data-i18n="modeNf">Tietokirjat</button>
+    </div>
   </header>
   <div class="stack">
     <div class="group glass loadbar" id="loadCard"><span class="spinner"></span><p class="note" id="loadText" role="status" data-i18n="loading">Ladataan kirjatietoja…</p></div>
@@ -75,7 +78,11 @@
 <section id="viewSearch" role="tabpanel" hidden aria-labelledby="hSearch">
   <header class="lt">
     <p class="eyebrow" data-i18n="tabSearch">Haku</p>
-    <h1 id="hSearch" data-i18n="searchTitle">Kaikki romaanit</h1>
+    <h1 id="hSearch" data-i18n="searchTitle">Kaikki kaunokirjallisuus</h1>
+    <div class="seg modeseg" role="radiogroup" data-i18n-attr="aria-label:modeLabel">
+      <button type="button" role="radio" data-mode="nov" data-i18n="modeNov">Kaunokirjallisuus</button>
+      <button type="button" role="radio" data-mode="nf" data-i18n="modeNf">Tietokirjat</button>
+    </div>
     <p class="note" id="loadNote"></p>
   </header>
   <div class="searchbar">

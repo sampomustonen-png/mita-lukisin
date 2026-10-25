@@ -1,18 +1,19 @@
 # Mitä lukisin
 
-Mitä lukisin suosittelee suomenkielisiä romaaneja kysymällä, millaisesta kirjallisuudesta pidät. Mukana on noin 46 000 kotimaista ja käännettyä romaania Suomen kirjastojen tiedoista. Sovellus toimii kokonaan selaimessa: se ei tarvitse palvelinta, tiliä eikä evästeitä.
+Mitä lukisin suosittelee suomenkielistä kaunokirjallisuutta (romaaneja, novelleja, runoja ja näytelmiä) ja tietokirjoja kysymällä, millaisesta kirjallisuudesta pidät. Aineisto perustuu Suomen kirjastojen tietoihin. Sovellus toimii kokonaan selaimessa: se ei tarvitse palvelinta, tiliä eikä evästeitä.
 
 Käyttöliittymä on suomeksi, ruotsiksi ja englanniksi.
 
 ## Ominaisuudet
 
-- Pikavalinnat ja kysely: lajityyppi, kerronta, tunnelma, aikakausi, paikka, teemat, pituus ja muut rajaukset
-- Vältettävät aiheet (esimerkiksi väkivalta, itsemurha, sota) ja tunnelmasäätimet
-- Haku kaikista romaaneista, samankaltaisten kirjojen haku ja järjestys eri perusteilla
+- Kaunokirjallisuus ja tietokirjat omina kokonaisuuksinaan: valinta avaussivun yläosassa
+- Pikavalinnat ja kysely: kaunokirjallisuudelle lajityyppi (myös runous, novellit ja näytelmät), kerronta, tunnelma, aikakausi, paikka, teemat ja pituus; tietokirjoille aihe, ote, alue, aikakausi ja pituus
+- Tunnelmasäätimet
+- Haku kaikista kirjoista, samankaltaisten kirjojen haku ja järjestys eri perusteilla
 - Oma lista, joka tallentuu selaimeen ja jonka voi viedä tiedostoon, tuoda tiedostosta tai jakaa linkkinä
 - Linkit Storyteliin, BookBeatiin, Helmetiin, Goodreadsiin, Finnaan ja kirjakauppoihin
 - Nyt luetaan: Kirjakauppaliiton Mitä Suomi lukee -listat muodoittain ja lajeittain sekä pikavalinta *Juuri nyt suosittua*
-- Uusimmat kirjastoihin luetteloidut romaanit haetaan suoraan Finnasta aina, kun sivu avataan
+- Uusimmat kirjastoihin luetteloidut kaunokirjat ja tietokirjat haetaan suoraan Finnasta aina, kun sivu avataan
 - Vaalea ja tumma ulkoasu, tekstin koon suurennus, näppäimistö- ja ruudunlukijatuki
 
 ## Käyttöönotto GitHub Pagesissa
@@ -27,9 +28,9 @@ Käyttöliittymä on suomeksi, ruotsiksi ja englanniksi.
 
 ## Miten aineisto pysyy ajan tasalla
 
-- **Joka avauskerta:** sivu hakee Finnan avoimesta rajapinnasta viimeksi luetteloidut romaanit ja lisää ne mukaan (merkintä *Uutuus*).
+- **Joka avauskerta:** sivu hakee Finnan avoimesta rajapinnasta viimeksi luetteloidut kaunokirjat ja tietokirjat ja lisää ne mukaan (merkintä *Uutuus*).
 - **Kerran viikossa:** työnkulku *Päivitä myyntilistat* hakee Kirjakauppaliiton tuoreimmat Mitä Suomi lukee -listat Nyt luetaan -näkymää varten.
-- **Kerran kuukaudessa:** työnkulku *Päivitä aineisto* hakee koko aineiston uudelleen Finnasta (kestää noin 1,5–2 tuntia), tallentaa sen ja julkaisee sivun uudelleen. Sen voi käynnistää myös käsin kohdasta **Actions → Päivitä aineisto → Run workflow**.
+- **Kerran kuukaudessa:** työnkulku *Päivitä aineisto* hakee kaunokirjallisuuden ja tietokirjat uudelleen Finnasta (kestää noin 2–3 tuntia), tallentaa sen ja julkaisee sivun uudelleen. Sen voi käynnistää myös käsin kohdasta **Actions → Päivitä aineisto → Run workflow**.
 
 ## Kehittäminen
 
@@ -45,14 +46,16 @@ Rakenne:
 | Kansio | Sisältö |
 |---|---|
 | `src/` | sivun lähdetiedostot: rakenne, tyylit, käännökset, kysymykset ja sovelluslogiikka |
-| `data/books.json` | kirja-aineisto |
+| `data/books.json` | kaunokirjallisuus |
+| `data/nonfiction.json` | tietokirjat |
 | `scripts/` | aineiston haku ja käsittely Finnasta (`update.sh` ajaa kaiken) |
 | `tests/` | automaattiset selaintestit |
 | `.github/workflows/` | testit, julkaisu ja kuukausittainen aineistopäivitys |
 
 ## Lähteet ja lisenssit
 
-- Kirjatiedot: [Finna.fi](https://www.finna.fi), Kansalliskirjasto. Metatiedot on julkaistu CC0-lisenssillä. Celian äänikirjat on jätetty pois. Kirjojen esittelytekstejä ei käytetä, koska ne ovat usein kustantajien tekijänoikeuden alaisia.
+- Kirjatiedot: [Finna.fi](https://www.finna.fi), Kansalliskirjasto. Metatiedot on julkaistu CC0-lisenssillä. Celian äänikirjat on jätetty pois.
+  Tietokirjat ovat Helmet-kirjastojen kokoelmasta; oppikirjat, hakuteokset, käsikirjat, tutkimusraportit ja väitöskirjat on rajattu pois. Kirjojen esittelytekstejä ei käytetä, koska ne ovat usein kustantajien tekijänoikeuden alaisia.
 - Myyntilistat: Kirjakauppaliitto, [Mitä Suomi lukee](https://kirjakauppaliitto.fi/mita-suomi-lukee/). Listat näytetään lähde mainiten ja alkuperäiseen listaan linkittäen.
 - Lainausmäärät: Helsingin kaupunginkirjasto, [HelMet-kirjastojen lainatuimmat aikuistenkirjat](https://hri.fi/data/dataset/helmet-kirjastojen-lainatuimmat-aikuistenkirjat), CC BY 4.0. Päivittyy kuukausittaisen aineistopäivityksen mukana.
 - Sovelluksen koodi: MIT-lisenssi (katso `LICENSE`).
