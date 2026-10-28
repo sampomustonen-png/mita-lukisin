@@ -468,6 +468,9 @@ function sortItems(items, mode, idxOf){
     pop:function(x, y){ return pop(R(y)) - pop(R(x)) || x._o - y._o; },
     'new':function(x, y){ return (R(y)[2] || 0) - (R(x)[2] || 0) || x._o - y._o; },
     old:function(x, y){ return (R(x)[2] || 9999) - (R(y)[2] || 9999) || x._o - y._o; },
+    /* Sivumäärä: kirjat, joiden pituutta ei tiedetä, näytetään lopussa */
+    'short':function(x, y){ return (R(x)[9] || 1e9) - (R(y)[9] || 1e9) || x._o - y._o; },
+    'long':function(x, y){ return (R(y)[9] || -1) - (R(x)[9] || -1) || x._o - y._o; },
     title:function(x, y){ return COLL.compare(R(x)[0], R(y)[0]); },
     author:function(x, y){ var a = R(x), b = R(y); return COLL.compare(surname(a[1]), surname(b[1])) || COLL.compare(a[1], b[1]) || (a[2] || 0) - (b[2] || 0); }
   }[mode] || function(x, y){ return x._o - y._o; };

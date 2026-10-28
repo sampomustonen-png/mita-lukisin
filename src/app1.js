@@ -39,7 +39,7 @@ function applyStatic(){
   });
   ['recSort', 'sSort'].forEach(function(id){
     var s = $(id), v = s.value || 'rel'; s.innerHTML = '';
-    [['rel', 'sortRel'], ['pop', 'sortPop'], ['new', 'sortNew'], ['old', 'sortOld'], ['title', 'sortTitle'], ['author', 'sortAuthor']].forEach(function(o){
+    [['rel', 'sortRel'], ['pop', 'sortPop'], ['new', 'sortNew'], ['old', 'sortOld'], ['short', 'sortShort'], ['long', 'sortLong'], ['title', 'sortTitle'], ['author', 'sortAuthor']].forEach(function(o){
       var op = el('option', null, T(o[1])); op.value = o[0]; s.appendChild(op);
     });
     s.value = v;
@@ -83,7 +83,7 @@ function pubText(b){ return typeof b[3] === 'string' ? b[3] : (P[b[3]] || ''); }
 function portable(b){ var c = b.slice(); c[3] = pubText(b); c[4] = b[4].map(termText); return c; }
 function currentRow(b){ if(!D) return b; ensureMaps(); var i = KEYIDX[keyOf(b)]; return i != null ? B[i] : b; }
 function keyOf(b){ return fold(b[0]) + '|' + fold(b[1]); }
-function indexRow(b){ return fold(b[0] + ' ' + (b[11] || '') + ' ' + b[1] + ' ' + (b[7] || '') + ' ' + b[4].map(function(i){ return V[i]; }).join(' ')); }
+function indexRow(b){ return fold(b[0] + ' ' + (b[11] || '') + ' ' + b[1] + ' ' + (b[7] || '') + ' ' + pubText(b) + ' ' + b[4].map(function(i){ return V[i]; }).join(' ')); }
 var KEYIDX = null, IDMAP = null;
 /* Hakemistot rakennetaan vasta tarvittaessa, jotta sovellus käynnistyy nopeasti */
 function ensureMaps(){

@@ -214,3 +214,25 @@ def test_runot_novellit_ja_naytelmat(page):
         page.click('#presets button:text-is("%s")' % name)
         expect(page.locator('#recList .book').first).to_be_visible()
         assert len(titles(page)) >= 10, name
+
+
+def test_haku_kustantajalla(page):
+    page.click('#tabSearch')
+    page.fill('#q', 'gummerus')
+    expect(page.locator('#sList .bk-meta').first).to_contain_text('Gummerus')
+
+
+def test_jarjestys_sivumaaran_mukaan(page):
+    page.click('#presets button:text-is("Klassikot")')
+    expect(page.locator('#recList .book').first).to_be_visible()
+    def pages():
+        out = []
+        for m in page.locator('#recList .bk-meta').all_inner_texts():
+            n = [int(w) for w in m.replace('\xa0', ' ').split() if w.isdigit() and int(w) < 3000]
+            out.append(n[-1] if n else None)
+        return [p for p in out if p]
+    page.select_option('#recSort', 'short')
+    expect(page.locator('#recList .book').first).to_be_visible()
+    a = pages(); assert a == sorted(a) and len(a) >= 5
+    page.select_option('#recSort', 'long')
+    b = pages(); assert b == sorted(b, reverse=True) and len(b) >= 5
